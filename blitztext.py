@@ -89,6 +89,7 @@ DEFAULT_CONFIG = {
     "paste": True,                    # True = automatisch einfuegen, False = nur Zwischenablage
     "auto_enter": False,              # True = nach dem Einfuegen automatisch Enter druecken (absenden)
     "type_instead_of_paste": False,   # True = Zeichen tippen statt Strg+V (fuer Apps ohne Einfuegen)
+    "typing_speed": "normal",         # Tipp-Tempo beim Tippen: "instant", "fast", "normal", "slow"
     "overlay": True,                  # kleines schwebendes Status-Fenster (HUD) anzeigen
     "initial_prompt": "",             # optionaler Kontext/Fachbegriffe fuer bessere Erkennung
     "push_to_talk": False,            # True = Hotkey gedrueckt halten = aufnehmen, loslassen = fertig
@@ -107,6 +108,23 @@ DEFAULT_CONFIG = {
         "word":     {"auto_enter": False}
     }
 }
+
+# Pause je Zeichen (Sekunden) beim Tippen statt Einfuegen; 0 = alles auf einmal
+TIPP_PAUSE = {"instant": 0.0, "fast": 0.008, "normal": 0.025, "slow": 0.06}
+TIPP_MAX_SEKUNDEN = 15          # auch lange Texte sind nach hoechstens so vielen Sekunden fertig
+
+
+def tippen(kbd, text, tempo):
+    """Text Zeichen fuer Zeichen tippen (sichtbar mitlaufend), mit Obergrenze fuer die Gesamtdauer."""
+    pause = TIPP_PAUSE.get(tempo, TIPP_PAUSE["normal"])
+    if pause <= 0 or not text:
+        kbd.type(text)
+        return
+    pause = min(pause, TIPP_MAX_SEKUNDEN / len(text))
+    for zeichen in text:
+        kbd.type(zeichen)
+        time.sleep(pause)
+
 
 def save_config(cfg):
     try:
@@ -744,7 +762,7 @@ class Blitztext:
         if opt("type_instead_of_paste"):
             # Zeichen direkt tippen (fuer Apps, die Strg+V nicht m/anders behandeln)
             time.sleep(0.05)
-            self.kbd.type(text)
+            tippen(self.kbd, text, opt("typing_speed", "normal"))
         else:
             # Standard: ueber Zwischenablage + Strg+V einfuegen
             if self.cfg.get("restore_clipboard", False):

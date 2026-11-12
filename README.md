@@ -57,6 +57,9 @@ Icon-Farben: grau = Modell lädt · blau = bereit · rot = nimmt auf · orange =
 - **Push-to-Talk:** Hotkey gedrückt halten = aufnehmen, loslassen = fertig
 - **Zweit-Hotkey (Standard `F8`):** diktiert *einmalig* in einer anderen Sprache (Standard Englisch), ohne die
   Hauptsprache umzustellen – praktisch, wenn du zwischen zwei Sprachen wechselst
+- **Sichtbar mitgetippt (optional):** Mit „Tippen statt Einfügen“ erscheint der Text nicht auf einmal, sondern
+  wird Zeichen für Zeichen geschrieben, als würdest du ihn selbst tippen – das Tempo stellst du ein. Es hilft auch
+  in Programmen, die Strg+V blockieren, und lässt deine Zwischenablage unberührt
 - **Sprachbefehle:** „neue Zeile“ / „neuer Absatz“ sprechen = echter Umbruch (auch „new line“ / „új sor“)
 - **Verlauf:** die letzten 10 Diktate stehen im Tray-Menü, Klick = in die Zwischenablage
 - **Zwischenablage zurücksetzen (optional):** Einschaltbar im Einstellungsfenster. Dann holt Blitztext nach dem
@@ -142,6 +145,7 @@ Nach Änderungen an der Datei die App neu starten (Tray-Menü → **Neu starten*
 | `language` | `de`, `en` … fest, oder `""` für automatische Erkennung |
 | `translate_to_english` | `true` = Gesprochenes wird ins Englische übersetzt |
 | `paste` / `auto_enter` / `type_instead_of_paste` | Einfügen, Enter danach, Tippen statt Strg+V |
+| `typing_speed` | Tempo beim Tippen: `instant`, `fast`, `normal`, `slow` (lange Texte sind nach höchstens ca. 15 Sekunden fertig) |
 | `initial_prompt` | zusätzlicher Kontext für die Erkennung (neben dem Wörterbuch) |
 | `max_seconds` | Aufnahme-Limit in Sekunden (`0` = aus, Standard 300) |
 | `app_profiles` | Fenstertitel-Schnipsel → Überschreibungen, z. B. `"whatsapp": {"auto_enter": true}` |

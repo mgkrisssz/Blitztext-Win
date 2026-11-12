@@ -65,6 +65,7 @@ TIPS = {
     'Zwischenablage zurücksetzen': 'Dein vorher Kopiertes bleibt erhalten.',
     'Automatisch Enter (absenden)': 'Drückt nach dem Einfügen Enter.',
     'Tippen statt Einfügen': 'Wie von Hand getippt. Nur nötig, wenn Einfügen nicht klappt.',
+    'Tempo-Auswahl': 'Wie schnell der Text beim Tippen erscheint.',
     'Sprachbefehle': '„neue Zeile“ wird zum Umbruch.',
     'Mit Windows starten': 'Startet mit deiner Anmeldung.',
     'Status-HUD anzeigen': 'Anzeige am Bildschirmrand beim Aufnehmen.',
@@ -822,6 +823,14 @@ def _run(ctx):
         toggle_row("Automatisch einfügen", *cfg_toggle("paste"))
         toggle_row("Automatisch Enter (absenden)", *cfg_toggle("auto_enter"))
         toggle_row("Tippen statt Einfügen", *cfg_toggle("type_instead_of_paste"))
+        TEMPI = [("Tipp-Tempo: Sofort", "instant"), ("Tipp-Tempo: Schnell", "fast"),
+                 ("Tipp-Tempo: Normal", "normal"), ("Tipp-Tempo: Langsam", "slow")]
+        tempo_to_label = {c: l for l, c in TEMPI}
+        def tempo_pick(val):
+            cfg["typing_speed"] = dict(TEMPI)[val]
+            save()
+        select_row(lambda: tempo_to_label.get(cfg.get("typing_speed") or "normal", TEMPI[2][0]),
+                   [l for l, _ in TEMPI], tempo_pick, tip="Tempo-Auswahl")
         toggle_row("Zwischenablage zurücksetzen", *cfg_toggle("restore_clipboard"))
         toggle_row("Sprachbefehle", *cfg_toggle("voice_commands"))
 
