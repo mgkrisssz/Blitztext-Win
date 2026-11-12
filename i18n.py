@@ -86,6 +86,7 @@ EN = {
     "Mikrofonliste aktualisieren": "Refresh microphone list",
     "Protokoll öffnen": "Open log file",
     "Beenden": "Quit",
+    "Neu starten": "Restart",
     "Update verfügbar": "Update available",
     # --- Tooltips / HUD
     "Blitztext - Modell wird geladen ...": "Blitztext - loading model ...",

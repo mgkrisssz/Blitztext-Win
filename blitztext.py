@@ -842,7 +842,7 @@ def main():
     listener.start()
 
     # Tray-Menue
-    def on_quit(icon, item):
+    def aufraeumen():
         try:
             if app.stream is not None:
                 app.stream.stop(); app.stream.close()
@@ -850,6 +850,22 @@ def main():
             pass
         app.overlay.stop()
         listener.stop()
+
+    def on_quit(icon, item):
+        aufraeumen()
+        icon.stop()
+
+    def on_restart(icon, item):
+        """Blitztext beenden und sofort neu starten (z. B. nach Aenderung an config.json)."""
+        import subprocess
+        aufraeumen()
+        try:
+            subprocess.Popen([sys.executable, os.path.abspath(__file__)], cwd=APP_DIR,
+                             creationflags=0x00000008 | 0x00000200,   # DETACHED_PROCESS | NEW_PROCESS_GROUP
+                             close_fds=True)
+            print("[Blitztext] Neustart ...")
+        except Exception as e:
+            print(f"[Fehler] Neustart fehlgeschlagen: {e}")
         icon.stop()
 
     def toggle_paste(icon, item):
@@ -952,6 +968,7 @@ def main():
             "autostart_get": autostart.enabled,
             "autostart_set": autostart.set_enabled,
             "refresh_tray": lambda: refresh_menu(icon, None),
+            "restart": lambda: on_restart(icon, None),
             "open_vocab": lambda: open_vocab(None, None),
             "set_hotkey": set_hotkey,
             "reload_model": app.reload_model,
@@ -1027,6 +1044,7 @@ def main():
             pystray.MenuItem(lambda item: t("Wörterbuch bearbeiten"), open_vocab),
             pystray.MenuItem(lambda item: t("Mikrofonliste aktualisieren"), refresh_menu),
             pystray.MenuItem(lambda item: t("Protokoll öffnen"), open_log),
+            pystray.MenuItem(lambda item: t("Neu starten"), on_restart),
             pystray.MenuItem(lambda item: t("Beenden"), on_quit),
         )
 

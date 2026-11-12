@@ -12,6 +12,8 @@ auf deinem eigenen PC. Keine Konten, keine API-Keys, keine Daten verlassen den R
 > start with `Blitztext.vbs`. MIT licensed. The interface is available in **German and English**
 > (follows your Windows language, switchable in the settings).
 
+<p align="center"><img src="docs/einstellungen.png" alt="Einstellungsfenster / settings window" width="300"></p>
+
 Windows-Nachbau der Idee von [blitztext-app](https://github.com/cmagnussen/blitztext-app)
 (macOS) von cmagnussen – mit freundlicher Erlaubnis des Autors.
 
@@ -23,7 +25,8 @@ Windows-Nachbau der Idee von [blitztext-app](https://github.com/cmagnussen/blitz
   **„Add python.exe to PATH“** anhaken
 - Ein Mikrofon
 - **Optional:** eine NVIDIA-Grafikkarte – damit ist das beste Modell blitzschnell. Ohne läuft es auf der CPU
-  (dann ein kleineres Modell nehmen, siehe unten).
+  (dann ein kleineres Modell nehmen, siehe unten). **AMD Radeon / Intel-Grafik:** siehe
+  [Fragen & Antworten](#fragen--antworten) – läuft auf der CPU.
 - Platz: ca. 0,6 GB für die Programmpakete (mit NVIDIA-Karte ca. 2 GB) + 0,1–3 GB für das Sprachmodell (je nach Wahl)
 
 ## Installation
@@ -115,7 +118,7 @@ Haken entfernen = wieder weg).
 
 ## Erweiterte Einstellungen (`config.json`)
 Wird beim ersten Start angelegt. Alles Wichtige geht im Einstellungsfenster; diese Datei ist für den Rest.
-Nach Änderungen an der Datei die App neu starten.
+Nach Änderungen an der Datei die App neu starten (Tray-Menü → **Neu starten**).
 
 | Einstellung | Bedeutung |
 |---|---|
@@ -146,6 +149,19 @@ Nach Änderungen an der Datei die App neu starten.
 - **Nur Stille aufgenommen:** anderes Mikrofon im Einstellungsfenster wählen, der Pegelbalken muss ausschlagen.
 - **Text landet nicht im Zielprogramm:** „Tippen statt Einfügen“ einschalten.
 - **Nachsehen, ob die Grafikkarte funktioniert:** `.venv\Scripts\python.exe test_gpu.py`
+
+## Fragen & Antworten
+**Geht das auch mit einer AMD Radeon oder Intel-Grafik?**
+Ja, aber **nur über die CPU**. Die GPU-Beschleunigung gibt es aktuell nur für NVIDIA (CUDA), weil die verwendete
+Erkennungs-Engine (CTranslate2 / faster-whisper) unter Windows keine AMD-Karten ansteuern kann. Mit einer Radeon
+erkennt Blitztext das selbst und startet mit dem Modell `small` auf der CPU – das ist für normales Diktieren
+brauchbar. Wenn dein Prozessor kräftig ist, kannst du `medium` oder `large-v3-turbo` probieren.
+Ein Weg über Vulkan (z. B. mit whisper.cpp) wäre technisch möglich, ist aber ein größerer Umbau – wenn Bedarf da
+ist, schreib bitte ein [Issue](../../issues).
+
+**Blitztext hängt oder verhält sich komisch – was tun?**
+Tray-Icon rechtsklicken → **Neu starten** (oder im Einstellungsfenster unten den Knopf **Neu starten**).
+Das beendet Blitztext und startet es sofort wieder – praktisch auch nach Änderungen an `config.json`.
 
 ## Eine `.exe` zum Doppelklicken?
 Aktuell läuft Blitztext über Python (`setup.bat`). Wenn du dir eine fertige `.exe` ohne Python-Installation

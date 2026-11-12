@@ -133,7 +133,7 @@ def _round_corners(root):
 
 def open_settings(ctx):
     """Fenster oeffnen (nur eines gleichzeitig). ctx: cfg, save, devices,
-    autostart_get, autostart_set, open_vocab, set_hotkey, reload_model, suspend,
+    autostart_get, autostart_set, open_vocab, set_hotkey, reload_model, restart, suspend,
     resolve_device."""
     global _open
     with _lock:
@@ -685,6 +685,8 @@ def _run(ctx):
         hint("Oberfläche")
 
         pill_button("Wörterbuch bearbeiten", lambda: ctx["open_vocab"]())
+        if ctx.get("restart"):
+            pill_button("Neu starten", lambda: ctx["restart"]())
 
         # -- Groesse + Position: erstmalig rechts unten (beim Tray), danach
         # bleibt die Unterkante, wo der Nutzer das Fenster hingezogen hat ------
