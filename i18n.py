@@ -23,6 +23,8 @@ EN = {
     "DARSTELLUNG": "APPEARANCE",
     # --- Hotkeys
     "Aufnahme": "Recording",
+    "Erkennung": "Recognition",
+    "Ausgabe": "Output",
     "Zweitsprache (einmalig)": "Second language (one-off)",
     "klicken, dann neue Taste drücken (Entf = aus)": "click, then press the new key (Del = off)",
     "Sprache, die der Zweit-Hotkey für ein Diktat nutzt": "Language the second hotkey uses for one dictation",

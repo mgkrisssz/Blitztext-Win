@@ -1061,6 +1061,7 @@ def main():
             "autostart_set": autostart.set_enabled,
             "refresh_tray": lambda: refresh_menu(icon, None),
             "restart": lambda: on_restart(icon, None),
+            "version": VERSION,
             "open_vocab": lambda: open_vocab(None, None),
             "set_hotkey": set_hotkey,
             "reload_model": app.reload_model,

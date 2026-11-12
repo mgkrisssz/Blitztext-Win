@@ -14,7 +14,7 @@ auf deinem eigenen PC. Keine Konten, keine API-Keys, keine Daten verlassen den R
 > start with `Blitztext.vbs`. MIT licensed. The interface is available in **German and English**
 > (follows your Windows language, switchable in the settings).
 
-<p align="center"><img src="docs/einstellungen.png" alt="Einstellungsfenster / settings window" width="300"></p>
+<p align="center"><img src="docs/einstellungen.png" alt="Einstellungsfenster / settings window" width="560"></p>
 
 💜 **Danke an [cmagnussen](https://github.com/cmagnussen)!** Die Idee stammt von seiner macOS-App
 [blitztext-app](https://github.com/cmagnussen/blitztext-app) (MIT-Lizenz). Er hat ausdrücklich dazu ermuntert, sie
@@ -90,7 +90,7 @@ Icon-Farben: grau = Modell lädt · blau = bereit · rot = nimmt auf · orange =
 | **System** | Mit Windows starten, Status-Anzeige (HUD), Update-Hinweis ein/aus |
 | **Darstellung** | Drei Stile (Mix, Claude, Hell) und Oberflächen-Sprache (Automatisch, Deutsch, English) |
 
-Das Fenster scrollt mit dem Mausrad, falls dein Bildschirm klein ist.
+Links wählst du den Bereich (Aufnahme, Erkennung, Ausgabe, System), rechts stellst du ihn ein. Auf kleinen Bildschirmen scrolliert die Seite mit dem Mausrad.
 
 ## Welches Modell?
 Größer = genauer, aber langsamer und mehr Speicher. Im Einstellungsfenster unter **Modell** wählbar –

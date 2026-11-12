@@ -250,7 +250,10 @@ def _run(ctx):
 
     fams = set(tkfont.families())
 
-    WW = 350
+    WW = 660                 # Fensterbreite
+    SB_W = 170               # Breite der Seitenleiste links
+    PW = WW - 2 - SB_W       # Breite der Einstellungsseite rechts
+    WH = 480                 # Fensterhoehe (wird auf kleinen Bildschirmen gekuerzt)
     holder = {"content": None, "meter_draw": None}
     cap = {"which": None, "redraw": None, "clear_ok": False, "pulse": None}
 
@@ -370,14 +373,22 @@ def _run(ctx):
             holder["popup_close"]()
         if holder["content"]:
             holder["content"].destroy()
-        # Inhalt liegt in einem Canvas, damit das Fenster auf kleinen Bildschirmen
-        # (Laptop, 1080p) per Mausrad scrollbar bleibt statt abgeschnitten zu werden.
+        # Aufbau: oben der Kopf, darunter links die Seitenleiste und rechts die gewaehlte
+        # Einstellungsseite (in einem Canvas, damit sie auf kleinen Bildschirmen scrollt).
         shell = tk.Frame(root, bg=BGC)
         shell.pack(fill="both", expand=True, padx=1, pady=1)
-        scroller = tk.Canvas(shell, bg=BGC, highlightthickness=0, bd=0)
+        header_f = tk.Frame(shell, bg=BGC)
+        header_f.pack(fill="x")
+        body_f = tk.Frame(shell, bg=BGC)
+        body_f.pack(fill="both", expand=True)
+        side = tk.Frame(body_f, bg=pal["seg_bg"], width=SB_W)
+        side.pack(side="left", fill="y")
+        side.pack_propagate(False)
+        right = tk.Frame(body_f, bg=BGC)
+        right.pack(side="left", fill="both", expand=True)
+        scroller = tk.Canvas(right, bg=BGC, highlightthickness=0, bd=0)
         scroller.pack(fill="both", expand=True)
-        content = tk.Frame(scroller, bg=BGC)
-        scroller.create_window(0, 0, window=content, anchor="nw", width=WW - 2)
+        content = None                      # aktuelle Seite (wird in show_page gesetzt)
         holder["content"] = shell
         holder["scroller"] = scroller
         if not holder.get("wheel_bound"):
@@ -399,7 +410,7 @@ def _run(ctx):
 
         def hint(text):
             tk.Label(content, text=t(text), bg=BGC, fg=pal["subtle"], font=FS,
-                     anchor="w", justify="left", wraplength=WW - 48).pack(fill="x", padx=22)
+                     anchor="w", justify="left", wraplength=PW - 48).pack(fill="x", padx=22)
 
         def attach_tip(widgets, key):
             """Kleine Erklaerung, wenn die Maus kurz ueber der Zeile verweilt."""
@@ -490,15 +501,15 @@ def _run(ctx):
                 c.delete("all")
                 w = c.winfo_width()
                 if w < 10:
-                    w = WW - 42
+                    w = PW - 42
                 c._imgs = [_pill(c, w, 34, 8, pal["field_bg"], outline=pal["field_border"])]
                 c.create_image(0, 0, anchor="nw", image=c._imgs[0])
                 txt = t(text_get())
                 if len(txt) > 34:
                     txt = txt[:33] + "…"
                 c.create_text(14, 17, anchor="w", text=txt, fill=pal["text"], font=FB)
-                c.create_text(w - 14, 17, anchor="e", text="⌄", fill=pal["subtle"],
-                              font=(body, 10, "bold"))
+                c.create_line(w - 25, 15, w - 20, 20, w - 15, 15, fill=pal["subtle"], width=2,
+                              capstyle="round", joinstyle="round")
             def open_popup(_e=None):
                 """Eigenes, zum Theme passendes Auswahlfenster (statt des Windows-Menues)."""
                 if holder.get("popup_close"):
@@ -601,7 +612,7 @@ def _run(ctx):
                 c.delete("all")
                 w = c.winfo_width()
                 if w < 10:
-                    w = WW - 42
+                    w = PW - 42
                 if secondary:       # zurueckhaltender Zweitknopf: heller Grund, Rahmen
                     bg, rand, txt = pal["chip_bg"], pal["chip_border"], pal["chip_text"]
                 else:
@@ -694,7 +705,7 @@ def _run(ctx):
                 c.delete("all")
                 w = c.winfo_width()
                 if w < 10:
-                    w = WW - 42
+                    w = PW - 42
                 c._imgs = [_pill(c, w, 30, 9, pal["seg_bg"])]
                 c.create_image(0, 0, anchor="nw", image=c._imgs[0])
                 seg_w = (w - 6) / 3
@@ -725,10 +736,13 @@ def _run(ctx):
                     lambda v: (cfg.__setitem__(key, bool(v)), save()))
 
         # -- Kopf: Titel, Schliessen, Untertitel, Verschieben -------------------
-        head = tk.Frame(content, bg=BGC)
+        head = tk.Frame(header_f, bg=BGC)
         head.pack(fill="x", padx=(20, 10), pady=(12, 0))
-        title = tk.Label(head, text="⚡ Blitztext", bg=BGC, fg=pal["text"],
-                         font=FT, anchor="w")
+        from logo import blitz_icon
+        logo_img = ImageTk.PhotoImage(blitz_icon(groesse=26), master=head)
+        title = tk.Label(head, text=" Blitztext", image=logo_img, compound="left",
+                         bg=BGC, fg=pal["text"], font=FT, anchor="w")
+        title._logo = logo_img                  # Referenz halten (sonst raeumt Tk das Bild weg)
         title.pack(side="left")
         close = tk.Canvas(head, width=34, height=34, bg=BGC,
                           highlightthickness=0, bd=0, cursor="hand2")
@@ -752,7 +766,7 @@ def _run(ctx):
                      cfg.get("second_language") or "")
         parts = [f"{t('Hotkey')} {hk}"] + ([f"{hk2} = {t(lang2)}"] if hk2 else []) \
                 + [t("Esc = verwerfen")]
-        sub = tk.Label(content, text="  ·  ".join(parts), bg=BGC,
+        sub = tk.Label(header_f, text="  ·  ".join(parts), bg=BGC,
                        fg=pal["subtle"], font=FS, anchor="w")
         sub.pack(fill="x", padx=21)
 
@@ -765,112 +779,163 @@ def _run(ctx):
             w.bind("<Button-1>", drag_start)
             w.bind("<B1-Motion>", drag_move)
 
-        # -- Inhalt --------------------------------------------------------------
-        section("HOTKEYS", first=True)
-        hotkey_row("Aufnahme", "hotkey")
-        hotkey_row("Zweitsprache (einmalig)", "hotkey_second", clear_ok=True)
-        hint("klicken, dann neue Taste drücken (Entf = aus)")
-        code_to_label2 = {c: l for l, c in LANGS if c}
-        def lang2_pick(val):
-            cfg["second_language"] = dict(LANGS)[val]
-            save()
-            rebuild()
-        select_row(lambda: code_to_label2.get(cfg.get("second_language") or "en", "Englisch"),
-                   [l for l, c in LANGS if c], lang2_pick, tip="Zweitsprache-Auswahl")
-        hint("Sprache, die der Zweit-Hotkey für ein Diktat nutzt")
+        tk.Frame(header_f, bg=pal["divider"], height=1).pack(fill="x", pady=(10, 0))
 
-        section("AUFNAHME")
-        toggle_row("Gedrückt halten (Push-to-Talk)", *cfg_toggle("push_to_talk"))
-        hint("Hotkey halten = aufnehmen · loslassen = fertig")
-        toggle_row("Ton bei Start/Stopp", *cfg_toggle("beep"))
-
-        section("MIKROFON")
-        AUTO_MIC = "Automatisch (System-Standard)"
-        devices = [AUTO_MIC] + list(ctx["devices"]())
-        cur_mic = cfg.get("input_device")
-        if cur_mic and cur_mic not in devices:
-            devices.append(cur_mic)          # gespeichertes, gerade getrenntes Geraet
-        def mic_pick(val):
-            cfg["input_device"] = None if val == AUTO_MIC else val
-            save()
-            meter_start()
-        select_row(lambda: cfg.get("input_device") or AUTO_MIC, devices, mic_pick, tip="Mikrofon-Auswahl")
-        meter_row()
-
-        section("MODELL")
-        label_to_model = dict(MODELS)
-        model_to_label = {m: l for l, m in MODELS}
-        def model_pick(val):
-            neu = label_to_model[val]
-            if neu != cfg.get("model"):
-                cfg["model"] = neu
+        # -- Seiten ------------------------------------------------------------------
+        def seite_aufnahme():
+            section("HOTKEYS", first=True)
+            hotkey_row("Aufnahme", "hotkey")
+            hotkey_row("Zweitsprache (einmalig)", "hotkey_second", clear_ok=True)
+            hint("klicken, dann neue Taste drücken (Entf = aus)")
+            code_to_label2 = {c: l for l, c in LANGS if c}
+            def lang2_pick(val):
+                cfg["second_language"] = dict(LANGS)[val]
                 save()
-                ctx["reload_model"]()      # lädt im Hintergrund neu (Icon grau)
-        select_row(lambda: model_to_label.get(cfg.get("model"), cfg.get("model") or "?"),
-                   [l for l, _ in MODELS], model_pick, tip="Modell-Auswahl")
-        hint("Wechsel lädt neu · beim ersten Mal Download")
+                rebuild()
+            select_row(lambda: code_to_label2.get(cfg.get("second_language") or "en", "Englisch"),
+                       [l for l, c in LANGS if c], lang2_pick, tip="Zweitsprache-Auswahl")
+            hint("Sprache, die der Zweit-Hotkey für ein Diktat nutzt")
 
-        section("SPRACHE")
-        code_to_label = {c: l for l, c in LANGS}
-        def lang_pick(val):
-            cfg["language"] = dict(LANGS)[val]
-            save()
-        select_row(lambda: code_to_label.get(cfg.get("language") or "", "Automatisch"),
-                   [l for l, _ in LANGS], lang_pick, tip="Sprache-Auswahl")
-        toggle_row("Ins Englische übersetzen", *cfg_toggle("translate_to_english"))
+            section("AUFNAHME")
+            toggle_row("Gedrückt halten (Push-to-Talk)", *cfg_toggle("push_to_talk"))
+            hint("Hotkey halten = aufnehmen · loslassen = fertig")
+            toggle_row("Ton bei Start/Stopp", *cfg_toggle("beep"))
 
-        section("AUSGABE")
-        toggle_row("Automatisch einfügen", *cfg_toggle("paste"))
-        toggle_row("Automatisch Enter (absenden)", *cfg_toggle("auto_enter"))
-        toggle_row("Tippen statt Einfügen", *cfg_toggle("type_instead_of_paste"))
-        TEMPI = [("Tipp-Tempo: Sofort", "instant"), ("Tipp-Tempo: Schnell", "fast"),
-                 ("Tipp-Tempo: Normal", "normal"), ("Tipp-Tempo: Langsam", "slow")]
-        tempo_to_label = {c: l for l, c in TEMPI}
-        def tempo_pick(val):
-            cfg["typing_speed"] = dict(TEMPI)[val]
-            save()
-        select_row(lambda: tempo_to_label.get(cfg.get("typing_speed") or "normal", TEMPI[2][0]),
-                   [l for l, _ in TEMPI], tempo_pick, tip="Tempo-Auswahl")
-        toggle_row("Zwischenablage zurücksetzen", *cfg_toggle("restore_clipboard"))
-        toggle_row("Sprachbefehle", *cfg_toggle("voice_commands"))
+        def seite_erkennung():
+            section("MIKROFON", first=True)
+            AUTO_MIC = "Automatisch (System-Standard)"
+            devices = [AUTO_MIC] + list(ctx["devices"]())
+            cur_mic = cfg.get("input_device")
+            if cur_mic and cur_mic not in devices:
+                devices.append(cur_mic)          # gespeichertes, gerade getrenntes Geraet
+            def mic_pick(val):
+                cfg["input_device"] = None if val == AUTO_MIC else val
+                save()
+                meter_start()
+            select_row(lambda: cfg.get("input_device") or AUTO_MIC, devices, mic_pick,
+                       tip="Mikrofon-Auswahl")
+            meter_row()
 
-        section("SYSTEM")
-        toggle_row("Mit Windows starten",
-                   lambda: ctx["autostart_get"](),
-                   lambda v: ctx["autostart_set"](bool(v)))
-        toggle_row("Status-HUD anzeigen", *cfg_toggle("overlay"))
-        hint("wirkt nach Neustart der App")
-        toggle_row("Nach Updates suchen", *cfg_toggle("update_check"))
+            section("MODELL")
+            label_to_model = dict(MODELS)
+            model_to_label = {m: l for l, m in MODELS}
+            def model_pick(val):
+                neu = label_to_model[val]
+                if neu != cfg.get("model"):
+                    cfg["model"] = neu
+                    save()
+                    ctx["reload_model"]()      # lädt im Hintergrund neu (Icon grau)
+            select_row(lambda: model_to_label.get(cfg.get("model"), cfg.get("model") or "?"),
+                       [l for l, _ in MODELS], model_pick, tip="Modell-Auswahl")
+            hint("Wechsel lädt neu · beim ersten Mal Download")
 
-        section("DARSTELLUNG")
-        seg_row()
-        UI_LANGS = [("Automatisch", "auto"), ("Deutsch", "de"), ("English", "en")]
-        ui_to_label = {c: l for l, c in UI_LANGS}
-        def ui_pick(val):
-            cfg["ui_language"] = dict(UI_LANGS)[val]
-            save()
-            set_language(cfg["ui_language"])
-            if ctx.get("refresh_tray"):
-                ctx["refresh_tray"]()
-            rebuild()
-        select_row(lambda: ui_to_label.get(cfg.get("ui_language") or "auto", "Automatisch"),
-                   [l for l, _ in UI_LANGS], ui_pick, tip="Oberfläche-Auswahl")
-        hint("Sprache der Oberfläche")
+            section("SPRACHE")
+            code_to_label = {c: l for l, c in LANGS}
+            def lang_pick(val):
+                cfg["language"] = dict(LANGS)[val]
+                save()
+            select_row(lambda: code_to_label.get(cfg.get("language") or "", "Automatisch"),
+                       [l for l, _ in LANGS], lang_pick, tip="Sprache-Auswahl")
+            toggle_row("Ins Englische übersetzen", *cfg_toggle("translate_to_english"))
+            pill_button("Wörterbuch bearbeiten", lambda: ctx["open_vocab"](), pady=(16, 14))
 
-        if ctx.get("restart"):
-            pill_button("Wörterbuch bearbeiten", lambda: ctx["open_vocab"](), pady=(14, 6))
-            pill_button("Neu starten", lambda: ctx["restart"](), pady=(0, 16), secondary=True)
-        else:
-            pill_button("Wörterbuch bearbeiten", lambda: ctx["open_vocab"]())
+        def seite_ausgabe():
+            section("AUSGABE", first=True)
+            toggle_row("Automatisch einfügen", *cfg_toggle("paste"))
+            toggle_row("Automatisch Enter (absenden)", *cfg_toggle("auto_enter"))
+            toggle_row("Tippen statt Einfügen", *cfg_toggle("type_instead_of_paste"))
+            TEMPI = [("Tipp-Tempo: Sofort", "instant"), ("Tipp-Tempo: Schnell", "fast"),
+                     ("Tipp-Tempo: Normal", "normal"), ("Tipp-Tempo: Langsam", "slow")]
+            tempo_to_label = {c: l for l, c in TEMPI}
+            def tempo_pick(val):
+                cfg["typing_speed"] = dict(TEMPI)[val]
+                save()
+            select_row(lambda: tempo_to_label.get(cfg.get("typing_speed") or "normal", TEMPI[2][0]),
+                       [l for l, _ in TEMPI], tempo_pick, tip="Tempo-Auswahl")
+            toggle_row("Zwischenablage zurücksetzen", *cfg_toggle("restore_clipboard"))
+            toggle_row("Sprachbefehle", *cfg_toggle("voice_commands"))
+
+        def seite_system():
+            section("SYSTEM", first=True)
+            toggle_row("Mit Windows starten",
+                       lambda: ctx["autostart_get"](),
+                       lambda v: ctx["autostart_set"](bool(v)))
+            toggle_row("Status-HUD anzeigen", *cfg_toggle("overlay"))
+            hint("wirkt nach Neustart der App")
+            toggle_row("Nach Updates suchen", *cfg_toggle("update_check"))
+
+            section("DARSTELLUNG")
+            seg_row()
+            UI_LANGS = [("Automatisch", "auto"), ("Deutsch", "de"), ("English", "en")]
+            ui_to_label = {c: l for l, c in UI_LANGS}
+            def ui_pick(val):
+                cfg["ui_language"] = dict(UI_LANGS)[val]
+                save()
+                set_language(cfg["ui_language"])
+                if ctx.get("refresh_tray"):
+                    ctx["refresh_tray"]()
+                rebuild()
+            select_row(lambda: ui_to_label.get(cfg.get("ui_language") or "auto", "Automatisch"),
+                       [l for l, _ in UI_LANGS], ui_pick, tip="Oberfläche-Auswahl")
+            hint("Sprache der Oberfläche")
+            if ctx.get("restart"):
+                pill_button("Neu starten", lambda: ctx["restart"](), pady=(18, 14), secondary=True)
+
+        PAGES = {"Aufnahme": seite_aufnahme, "Erkennung": seite_erkennung,
+                 "Ausgabe": seite_ausgabe, "System": seite_system}
+        nav_draw = {}
+
+        def show_page(name):
+            nonlocal content
+            if cap["which"]:
+                end_capture()
+            if holder.get("popup_close"):
+                holder["popup_close"]()
+            holder["page"] = name
+            holder["meter_draw"] = None
+            scroller.delete("all")
+            for w_ in list(scroller.winfo_children()):
+                w_.destroy()
+            content = tk.Frame(scroller, bg=BGC)
+            scroller.create_window(0, 0, window=content, anchor="nw", width=PW)
+            scroller.yview_moveto(0)
+            PAGES[name]()
+            for redraw in nav_draw.values():
+                redraw()
+            root.update_idletasks()
+            voll = content.winfo_reqheight()
+            scroller.configure(scrollregion=(0, 0, PW, voll), yscrollincrement=30)
+            holder["scrollable"] = voll > scroller.winfo_height()
+
+        # -- Seitenleiste ---------------------------------------------------------------
+        tk.Frame(side, bg=pal["seg_bg"], height=10).pack()
+        for name in PAGES:
+            c = tk.Canvas(side, height=38, bg=pal["seg_bg"], highlightthickness=0,
+                          bd=0, cursor="hand2")
+            c.pack(fill="x", padx=10, pady=(0, 4))
+            def draw_nav(_e=None, c=c, name=name):
+                c.delete("all")
+                w_ = c.winfo_width()
+                if w_ < 10:
+                    w_ = SB_W - 20
+                aktiv = holder.get("page") == name
+                if aktiv:
+                    c._imgs = [_pill(c, w_, 38, 9, "#ffffff", outline=pal["field_border"])]
+                    c.create_image(0, 0, anchor="nw", image=c._imgs[0])
+                c.create_text(16, 19, anchor="w", text=t(name),
+                              fill=pal["text"] if aktiv else pal["subtle"],
+                              font=(body, 11, "bold" if aktiv else "normal"))
+            nav_draw[name] = draw_nav
+            c.bind("<Configure>", draw_nav)
+            c.bind("<Button-1>", lambda e, name=name: show_page(name))
+            draw_nav()
+        if ctx.get("version"):
+            tk.Label(side, text="v" + str(ctx["version"]), bg=pal["seg_bg"], fg=pal["subtle"],
+                     font=(body, 9)).pack(side="bottom", pady=10)
 
         # -- Groesse + Position: erstmalig rechts unten (beim Tray), danach
         # bleibt die Unterkante, wo der Nutzer das Fenster hingezogen hat ------
-        root.update_idletasks()
-        voll = content.winfo_reqheight() + 2
-        wh = min(voll, root.winfo_screenheight() - 110)
-        holder["scrollable"] = voll > wh
-        scroller.configure(scrollregion=(0, 0, WW - 2, voll - 2))
-        scroller.configure(yscrollincrement=30)
+        wh = min(WH, root.winfo_screenheight() - 110)
         if holder.get("placed"):
             x = root.winfo_x()
             y = root.winfo_y() + root.winfo_height() - wh
@@ -879,6 +944,8 @@ def _run(ctx):
             x, y = sw - WW - 20, sh - wh - 80
             holder["placed"] = True
         root.geometry(f"{WW}x{wh}+{x}+{y}")
+        root.update_idletasks()
+        show_page(holder.get("page") if holder.get("page") in PAGES else "Aufnahme")
 
     rebuild()
     _round_corners(root)
