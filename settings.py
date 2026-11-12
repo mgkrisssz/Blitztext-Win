@@ -50,6 +50,30 @@ MODELS = [("Tiny – winzig, ungenau", "tiny"),
           ("Turbo – fast wie Large, schneller", "large-v3-turbo"),
           ("Large-v3 – beste Qualität (GPU)", "large-v3")]
 
+# Kleine Erklaerungen beim Darueberfahren mit der Maus (Schluessel = Beschriftung der Zeile)
+TIPS = {
+    'Aufnahme': 'Startet und beendet die Aufnahme.',
+    'Zweitsprache (einmalig)': 'Diktiert einmalig in der Zweitsprache.',
+    'Zweitsprache-Auswahl': 'Sprache des Zweit-Hotkeys.',
+    'Gedrückt halten (Push-to-Talk)': 'Halten = aufnehmen, loslassen = fertig.',
+    'Ton bei Start/Stopp': 'Piepton bei Start und Ende.',
+    'Mikrofon-Auswahl': 'Der Pegel darunter muss beim Sprechen ausschlagen.',
+    'Modell-Auswahl': 'Größer = genauer, aber langsamer.',
+    'Sprache-Auswahl': 'Die Sprache, in der du sprichst.',
+    'Ins Englische übersetzen': 'Schreibt alles direkt auf Englisch.',
+    'Automatisch einfügen': 'Fügt den Text am Cursor ein.',
+    'Zwischenablage zurücksetzen': 'Dein vorher Kopiertes bleibt erhalten.',
+    'Automatisch Enter (absenden)': 'Drückt nach dem Einfügen Enter.',
+    'Tippen statt Einfügen': 'Tippt statt Strg+V, falls Einfügen nicht klappt.',
+    'Sprachbefehle': '„neue Zeile“ wird zum Umbruch.',
+    'Mit Windows starten': 'Startet mit deiner Anmeldung.',
+    'Status-HUD anzeigen': 'Anzeige am Bildschirmrand beim Aufnehmen.',
+    'Nach Updates suchen': 'Fragt bei GitHub nach einer neuen Version.',
+    'Oberfläche-Auswahl': 'Sprache der Menüs.',
+    'Wörterbuch bearbeiten': 'Namen und feste Ersetzungen (falsch => richtig).',
+    'Neu starten': 'Beendet Blitztext und startet es neu.',
+}
+
 # Ampel-Farben fuer den Mikrofonpegel (Stil "mix")
 AMPEL = [(0.88, "#c53929"), (0.70, "#d9930d"), (0.0, "#2d8659")]
 
@@ -377,6 +401,54 @@ def _run(ctx):
             tk.Label(content, text=t(text), bg=BGC, fg=pal["subtle"], font=FS,
                      anchor="w").pack(fill="x", padx=22)
 
+        def attach_tip(widgets, key):
+            """Kleine Erklaerung, wenn die Maus kurz ueber der Zeile verweilt."""
+            tip = TIPS.get(key)
+            if not tip:
+                return
+            st = {"job": None, "win": None}
+
+            def weg(_e=None):
+                if st["job"]:
+                    try:
+                        root.after_cancel(st["job"])
+                    except Exception:
+                        pass
+                    st["job"] = None
+                if st["win"]:
+                    try:
+                        st["win"].destroy()
+                    except Exception:
+                        pass
+                    st["win"] = None
+
+            def zeigen(x, y):
+                st["job"] = None
+                tw = tk.Toplevel(root)
+                tw.overrideredirect(True)
+                tw.attributes("-topmost", True)
+                tw.configure(bg=pal["text"])
+                tk.Label(tw, text=t(tip), bg=pal["text"], fg=pal["bg"], font=FS,
+                         justify="left", wraplength=220, padx=14, pady=8).pack()
+                _round_corners(tw)                     # runde "Blase"
+                tw.update_idletasks()
+                bw, bh = tw.winfo_reqwidth(), tw.winfo_reqheight()
+                px = min(x + 14, root.winfo_screenwidth() - bw - 8)
+                py = y + 20
+                if py + bh > root.winfo_screenheight() - 40:
+                    py = y - bh - 12
+                tw.geometry(f"+{max(0, px)}+{py}")
+                st["win"] = tw
+
+            def planen(e):
+                weg()
+                st["job"] = root.after(450, zeigen, e.x_root, e.y_root)
+
+            for wdg in widgets:
+                wdg.bind("<Enter>", planen, add="+")
+                wdg.bind("<Leave>", weg, add="+")
+                wdg.bind("<Button-1>", weg, add="+")
+
         def toggle_row(text, get, set_cb):
             row = tk.Frame(content, bg=BGC)
             row.pack(fill="x", padx=20, pady=4)
@@ -407,8 +479,9 @@ def _run(ctx):
             c.bind("<Button-1>", click)
             lbl.bind("<Button-1>", click)
             render(knob_x(bool(get())), bool(get()))
+            attach_tip((lbl, c), text)
 
-        def select_row(text_get, options, on_pick):
+        def select_row(text_get, options, on_pick, tip=None):
             c = tk.Canvas(content, height=34, bg=BGC, highlightthickness=0,
                           bd=0, cursor="hand2")
             c.pack(fill="x", padx=20, pady=4)
@@ -515,6 +588,7 @@ def _run(ctx):
                 except Exception:
                     pass
             c.bind("<Button-1>", open_popup)
+            attach_tip((c,), tip)
             c.bind("<Configure>", draw)
             draw()
 
@@ -537,13 +611,15 @@ def _run(ctx):
                               font=(body, 10, "bold"))
             c.bind("<Configure>", draw)
             c.bind("<Button-1>", lambda e: cmd())
+            attach_tip((c,), text)
             draw()
 
         def hotkey_row(text, which, clear_ok=False):
             row = tk.Frame(content, bg=BGC)
             row.pack(fill="x", padx=20, pady=4)
-            tk.Label(row, text=t(text), bg=BGC, fg=pal["text"], font=F,
-                     anchor="w").pack(side="left", fill="x", expand=True)
+            hl = tk.Label(row, text=t(text), bg=BGC, fg=pal["text"], font=F, anchor="w")
+            hl.pack(side="left", fill="x", expand=True)
+            attach_tip((hl,), text)
             CW, CH = 124, 28
             c = tk.Canvas(row, width=CW, height=CH, bg=BGC,
                           highlightthickness=0, bd=0, cursor="hand2")
@@ -699,7 +775,7 @@ def _run(ctx):
             save()
             rebuild()
         select_row(lambda: code_to_label2.get(cfg.get("second_language") or "en", "Englisch"),
-                   [l for l, c in LANGS if c], lang2_pick)
+                   [l for l, c in LANGS if c], lang2_pick, tip="Zweitsprache-Auswahl")
         hint("Sprache, die der Zweit-Hotkey für ein Diktat nutzt")
 
         section("AUFNAHME")
@@ -717,7 +793,7 @@ def _run(ctx):
             cfg["input_device"] = None if val == AUTO_MIC else val
             save()
             meter_start()
-        select_row(lambda: cfg.get("input_device") or AUTO_MIC, devices, mic_pick)
+        select_row(lambda: cfg.get("input_device") or AUTO_MIC, devices, mic_pick, tip="Mikrofon-Auswahl")
         meter_row()
 
         section("MODELL")
@@ -730,7 +806,7 @@ def _run(ctx):
                 save()
                 ctx["reload_model"]()      # lädt im Hintergrund neu (Icon grau)
         select_row(lambda: model_to_label.get(cfg.get("model"), cfg.get("model") or "?"),
-                   [l for l, _ in MODELS], model_pick)
+                   [l for l, _ in MODELS], model_pick, tip="Modell-Auswahl")
         hint("Wechsel lädt das Modell neu · beim ersten Mal Download")
 
         section("SPRACHE")
@@ -739,7 +815,7 @@ def _run(ctx):
             cfg["language"] = dict(LANGS)[val]
             save()
         select_row(lambda: code_to_label.get(cfg.get("language") or "", "Automatisch"),
-                   [l for l, _ in LANGS], lang_pick)
+                   [l for l, _ in LANGS], lang_pick, tip="Sprache-Auswahl")
         toggle_row("Ins Englische übersetzen", *cfg_toggle("translate_to_english"))
 
         section("AUSGABE")
@@ -772,7 +848,7 @@ def _run(ctx):
                 ctx["refresh_tray"]()
             rebuild()
         select_row(lambda: ui_to_label.get(cfg.get("ui_language") or "auto", "Automatisch"),
-                   [l for l, _ in UI_LANGS], ui_pick)
+                   [l for l, _ in UI_LANGS], ui_pick, tip="Oberfläche-Auswahl")
         hint("Sprache der Oberfläche")
 
         if ctx.get("restart"):
