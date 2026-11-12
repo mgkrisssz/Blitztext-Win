@@ -28,8 +28,8 @@ Aufnahmen, Texte oder Einstellungen gesendet.
   Start sofort geht), Audio wird aber nur **während einer Aufnahme** gesammelt und danach verworfen.
 
 ## Zwischenablage
-Zum Einfügen legt Blitztext den Text kurz in die Zwischenablage und drückt Strg+V. Danach stellt es standardmäßig
-wieder zurück, was vorher darin war (nur Text; abschaltbar). Der Windows-Zwischenablageverlauf (Win+V), falls
+Zum Einfügen legt Blitztext den Text kurz in die Zwischenablage und drückt Strg+V. Auf Wunsch (Einstellung
+„Zwischenablage zurücksetzen“, standardmäßig aus) stellt es danach wieder her, was vorher darin war (nur Text). Der Windows-Zwischenablageverlauf (Win+V), falls
 eingeschaltet, kann den diktierten Text trotzdem aufnehmen – das ist eine Windows-Funktion.
 
 ## Abschalten

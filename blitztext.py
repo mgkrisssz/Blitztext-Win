@@ -99,7 +99,8 @@ DEFAULT_CONFIG = {
     "second_language": "en",          # Sprache des Zweit-Hotkeys (Kuerzel wie "en", "hu", "fr" ...)
     "theme": "mix",                   # Stil des Einstellungsfensters: "mix", "claude", "hell"
     "ui_language": "auto",            # Oberflaeche: "auto" (Windows-Sprache), "de", "en"
-    "restore_clipboard": True,        # nach dem Einfuegen die vorher kopierte Zwischenablage wiederherstellen
+    "restore_clipboard": False,       # True = nach dem Einfuegen die vorher kopierte Zwischenablage wiederherstellen
+                                      # (Standard aus: landet das Diktat nirgends, bleibt es sonst in der Zwischenablage)
     "update_check": True,             # beim Start bei GitHub nach neuer Version fragen (nur Hinweis)
     "app_profiles": {                 # Fenstertitel-Schnipsel -> Einstellungs-Overrides
         "whatsapp": {"auto_enter": True},
@@ -746,7 +747,7 @@ class Blitztext:
             self.kbd.type(text)
         else:
             # Standard: ueber Zwischenablage + Strg+V einfuegen
-            if self.cfg.get("restore_clipboard", True):
+            if self.cfg.get("restore_clipboard", False):
                 try:
                     alt_zwischenablage = pyperclip.paste()   # nur Text; Bilder/Dateien bleiben nicht erhalten
                 except Exception:

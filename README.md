@@ -59,8 +59,9 @@ Icon-Farben: grau = Modell lädt · blau = bereit · rot = nimmt auf · orange =
   Hauptsprache umzustellen – praktisch, wenn du zwischen zwei Sprachen wechselst
 - **Sprachbefehle:** „neue Zeile“ / „neuer Absatz“ sprechen = echter Umbruch (auch „new line“ / „új sor“)
 - **Verlauf:** die letzten 10 Diktate stehen im Tray-Menü, Klick = in die Zwischenablage
-- **Zwischenablage bleibt, wie sie war:** nach dem Einfügen holt Blitztext zurück, was du vorher kopiert hattest
-  (nur Text, abschaltbar)
+- **Zwischenablage zurücksetzen (optional):** Einschaltbar im Einstellungsfenster. Dann holt Blitztext nach dem
+  Einfügen zurück, was du vorher kopiert hattest (nur Text). Standardmäßig aus: Klickst du während des Diktierens
+  woanders hin, bleibt das Diktat sonst nicht in der Zwischenablage – es steht aber immer im Verlauf (Tray-Menü)
 - **Keine erfundenen Sätze:** Whisper erfindet bei Stille gern „Untertitel der Amara.org-Community“ oder
   „Thank you“. Solche Treffer werden verworfen, echte Sätze bleiben
 - **Wörterbuch:** eigene Namen und Fachbegriffe, die Whisper sonst falsch schreibt
@@ -146,7 +147,7 @@ Nach Änderungen an der Datei die App neu starten (Tray-Menü → **Neu starten*
 | `app_profiles` | Fenstertitel-Schnipsel → Überschreibungen, z. B. `"whatsapp": {"auto_enter": true}` |
 | `ui_language` | Oberfläche: `auto` (Windows-Sprache), `de` oder `en` |
 | `update_check` | `false` = keine Update-Abfrage bei GitHub |
-| `restore_clipboard` | `false` = die vorher kopierte Zwischenablage nach dem Einfügen nicht zurückholen |
+| `restore_clipboard` | `true` = die vorher kopierte Zwischenablage nach dem Einfügen zurückholen (Standard `false`) |
 | `spielmodus_pfad` | Optional, nur für Fortgeschrittene: Ordner mit einem eigenen `spielmodus.py`, das bei laufendem Spiel auf ein sparsames Modell wechselt |
 
 ## Probleme?
