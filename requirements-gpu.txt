@@ -1,0 +1,7 @@
+# Blitztext-Win - Abhaengigkeiten MIT NVIDIA-GPU-Unterstuetzung
+# (setup.bat waehlt diese Datei automatisch, wenn eine NVIDIA-Karte gefunden wird)
+-r requirements.txt
+
+# CUDA-Bibliotheken fuer die Grafikkarte (~1,5 GB):
+nvidia-cublas-cu12>=12.9,<13
+nvidia-cudnn-cu12>=9.2,<10

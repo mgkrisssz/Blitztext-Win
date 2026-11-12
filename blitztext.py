@@ -9,6 +9,7 @@ Blitztext-Win  -  Lokale Sprache-zu-Text-App fuer Windows
 Windows-Nachbau der Idee von blitztext-app (macOS, cmagnussen). Alles laeuft lokal.
 """
 
+import io
 import os
 import re
 import sys
@@ -18,6 +19,16 @@ import time
 import queue
 import ctypes
 import threading
+
+VERSION = "1.0.0"
+
+# Protokoll zuerst starten, damit auch Fehler beim Import (und harte Abstuerze) ins Log kommen
+import logsetup
+logsetup.start(os.path.dirname(os.path.abspath(__file__)))
+
+# Bei Windows-Skalierung >100 % Text scharf statt unscharf zeichnen (vor dem ersten Fenster!)
+import dpi
+dpi.scharf_zeichnen()
 
 # ---------------------------------------------------------------------------
 # 1) CUDA-DLLs (aus den nvidia-*-pip-Paketen) auffindbar machen  -- VOR Import!
@@ -46,6 +57,10 @@ from pynput.keyboard import Controller, Key
 import pystray
 from PIL import Image, ImageDraw
 
+import autostart
+import i18n
+import updater
+from i18n import t
 from overlay import Overlay
 from settings import open_settings, LANGS
 
@@ -83,6 +98,8 @@ DEFAULT_CONFIG = {
     "hotkey_second": "<f8>",          # Zweit-Hotkey: diktiert einmalig in der Zweitsprache ("" = aus)
     "second_language": "en",          # Sprache des Zweit-Hotkeys (Kuerzel wie "en", "hu", "fr" ...)
     "theme": "mix",                   # Stil des Einstellungsfensters: "mix", "claude", "hell"
+    "ui_language": "auto",            # Oberflaeche: "auto" (Windows-Sprache), "de", "en"
+    "update_check": True,             # beim Start bei GitHub nach neuer Version fragen (nur Hinweis)
     "app_profiles": {                 # Fenstertitel-Schnipsel -> Einstellungs-Overrides
         "whatsapp": {"auto_enter": True},
         "word":     {"auto_enter": False}
@@ -265,6 +282,52 @@ ICONS = {
 }
 
 # ---------------------------------------------------------------------------
+# 3b) Modell-Download mit Fortschritt (sonst sieht man bei 1-3 GB nur ein graues Icon)
+# ---------------------------------------------------------------------------
+def modell_vorhanden(name):
+    """True, wenn das Modell schon lokal liegt (kein Download noetig)."""
+    try:
+        from faster_whisper.utils import download_model
+        download_model(name, local_files_only=True)
+        return True
+    except Exception:
+        return False
+
+
+def modell_herunterladen(name, fortschritt):
+    """Laedt das Modell herunter und meldet den Fortschritt (0..1) an fortschritt().
+    Wie faster_whisper.utils.download_model, aber mit eigener Fortschrittsanzeige."""
+    from faster_whisper.utils import download_model, _MODELS
+    import huggingface_hub
+    from tqdm.auto import tqdm
+    repo = name if "/" in name else _MODELS.get(name)
+    if not repo:
+        download_model(name)
+        return
+
+    class _Fortschritt(tqdm):
+        def __init__(self, *args, **kwargs):
+            kwargs["file"] = io.StringIO()        # keine Balken ins Protokoll schreiben
+            super().__init__(*args, **kwargs)
+
+        def update(self, n=1):
+            r = super().update(n)
+            # nur der Balken der grossen Modell-Datei (Bytes), nicht der Datei-Zaehler
+            if self.unit == "B" and self.total and self.total > 5_000_000:
+                try:
+                    fortschritt(min(0.99, self.n / self.total))
+                except Exception:
+                    pass
+            return r
+
+    huggingface_hub.snapshot_download(
+        repo,
+        allow_patterns=["config.json", "preprocessor_config.json", "model.bin",
+                        "tokenizer.json", "vocabulary.*"],
+        tqdm_class=_Fortschritt)
+
+
+# ---------------------------------------------------------------------------
 # 4) Kern-Logik
 # ---------------------------------------------------------------------------
 class Blitztext:
@@ -289,6 +352,8 @@ class Blitztext:
         self._samples = 0           # aufgenommene Samples (fuer max_seconds)
         self._limit_hit = False
         self.lang_override = None   # per Zweit-Hotkey erzwungene Sprache (z. B. "en")
+        self.erststart = False      # True beim allerersten Start (Willkommenshinweis nach dem Laden)
+        self._lade_info = ""        # z. B. "Modell wird heruntergeladen ... 42 %" (Tooltip)
 
     # ---- akustisches Feedback ------------------------------------------
     def beep(self, kind):
@@ -311,11 +376,11 @@ class Blitztext:
         self.state = state
         if self.icon is not None:
             titles = {
-                "loading":      "Blitztext - Modell wird geladen ...",
-                "idle":         "Blitztext - bereit  (Hotkey: %s)%s" % (self.cfg["hotkey"], "  [Spielmodus: sparsames Modell]" if self.spar else ""),
-                "recording":    "Blitztext - HOERE ZU ... (Hotkey = fertig, Esc = verwerfen)",
-                "transcribing": "Blitztext - verarbeite ...",
-                "error":        "Blitztext - Fehler: " + extra,
+                "loading":      t("Blitztext - Modell wird geladen ...") + (("  " + self._lade_info) if self._lade_info else ""),
+                "idle":         "%s  (%s: %s)%s" % (t("Blitztext - bereit"), t("Hotkey"), self.cfg["hotkey"], "  [Spielmodus: sparsames Modell]" if self.spar else ""),
+                "recording":    t("Blitztext - HOERE ZU ... (Hotkey = fertig, Esc = verwerfen)"),
+                "transcribing": t("Blitztext - verarbeite ..."),
+                "error":        t("Blitztext - Fehler") + ": " + extra,
             }
             self.icon.icon = ICONS.get(state, ICONS["idle"])
             self.icon.title = titles.get(state, "Blitztext")
@@ -325,6 +390,12 @@ class Blitztext:
         from faster_whisper import WhisperModel
 
         def _try(device, compute_type):
+            if not modell_vorhanden(self.cfg["model"]):
+                print(f"[Blitztext] Modell {self.cfg['model']} wird heruntergeladen ...")
+                self.overlay.status(t("Modell wird heruntergeladen") + " …")
+                modell_herunterladen(self.cfg["model"], self._modell_fortschritt)
+                self._lade_info = ""
+                self.overlay.hide()
             print(f"[Blitztext] Lade {self.cfg['model']} auf {device} ({compute_type}) ...")
             self.model = WhisperModel(self.cfg["model"], device=device,
                                       compute_type=compute_type)
@@ -336,15 +407,25 @@ class Blitztext:
             _try(self.cfg["device"], self.cfg["compute_type"])
             self.set_state("idle")
             print("[Blitztext] Modell bereit.")
+            self._bereit_hinweis()
             if self._spar_wunsch:
                 self.set_sparmodus(True)
         except Exception as e:
+            # Modell fehlt und liess sich nicht laden (meist: kein Internet) -> kein CPU-Rueckfall
+            if not modell_vorhanden(self.cfg["model"]):
+                print(f"[Fehler] Modell {self.cfg['model']} nicht verfuegbar: {e}")
+                self._lade_info = ""
+                self.overlay.status(t("Modell konnte nicht geladen werden – Internet?"))
+                threading.Timer(7, self.overlay.hide).start()
+                self.set_state("error", t("Modell konnte nicht geladen werden – Internet?"))
+                return
             # Automatischer Rueckfall auf CPU (z. B. PC ohne NVIDIA-GPU)
             if self.cfg["device"] != "cpu":
                 print(f"[Warnung] GPU nicht nutzbar ({e}). Wechsle auf CPU (langsamer) ...")
                 try:
                     _try("cpu", "int8")
                     self.set_state("idle")
+                    self._bereit_hinweis()
                     print("[Blitztext] Modell bereit (CPU). Tipp: fuer Tempo 'model' "
                           "in config.json auf 'small' oder 'medium' stellen.")
                     return
@@ -352,6 +433,23 @@ class Blitztext:
                     e = e2
             print(f"[Fehler] Modell konnte nicht geladen werden: {e}")
             self.set_state("error", str(e))
+
+    def _modell_fortschritt(self, frac):
+        """Wird waehrend des Downloads aufgerufen (Hintergrund-Thread)."""
+        pct = int(frac * 100)
+        if self._lade_info == "%d %%" % pct:
+            return                                   # nur bei Aenderung aktualisieren
+        text = "%s … %d %%" % (t("Modell wird heruntergeladen"), pct)
+        self._lade_info = "%d %%" % pct
+        self.overlay.status(text)
+        self.set_state("loading")
+
+    def _bereit_hinweis(self):
+        """Nach dem allerersten Laden kurz sagen, wie es geht."""
+        if self.erststart:
+            self.erststart = False
+            key = (self.cfg["hotkey"] or "").replace("<", "").replace(">", "").upper()
+            self.overlay.result(t("Bereit – drücke {key} zum Diktieren").format(key=key))
 
     def reload_model(self):
         """Gewaehltes Modell (cfg["model"]) neu laden, z. B. nach Wechsel im Einstellungsfenster.
@@ -661,7 +759,9 @@ class Blitztext:
 # 5) Zusammenbau: Hotkey-Listener + Tray
 # ---------------------------------------------------------------------------
 def main():
+    erststart = not os.path.exists(CONFIG_PATH)
     cfg = load_config()
+    i18n.set_language(cfg.get("ui_language", "auto"))
     ensure_vocab_file()
     print("=" * 60)
     print(" Blitztext-Win  -  lokale Diktier-App")
@@ -672,6 +772,7 @@ def main():
     print("=" * 60)
 
     app = Blitztext(cfg)
+    app.erststart = erststart
 
     # Modell im Hintergrund laden, damit das Tray-Icon sofort erscheint
     threading.Thread(target=app.load_model, daemon=True).start()
@@ -775,14 +876,14 @@ def main():
         items = []
         for label, code in LANGS:
             items.append(pystray.MenuItem(
-                label,
+                (lambda l: (lambda item: t(l)))(label),
                 (lambda c: (lambda icon, item: set_lang(c)))(code),
                 checked=(lambda c: (lambda item: (cfg.get("language") or "") == c))(code),
                 radio=True,
             ))
         items.append(pystray.Menu.SEPARATOR)
         items.append(pystray.MenuItem(
-            "Ins Englische uebersetzen",
+            lambda item: t("Ins Englische übersetzen"),
             toggle_translate,
             checked=lambda item: cfg.get("translate_to_english", False),
         ))
@@ -797,7 +898,7 @@ def main():
 
     def mic_submenu():
         items = [pystray.MenuItem(
-            "Automatisch (System-Standard)",
+            lambda item: t("Automatisch (System-Standard)"),
             lambda icon, item: set_mic(None),
             checked=lambda item: not cfg.get("input_device"),
             radio=True,
@@ -816,27 +917,9 @@ def main():
         save_config(cfg)
         print(f"[Blitztext] Push-to-Talk: {'AN (halten)' if cfg['push_to_talk'] else 'AUS (Toggle)'}")
 
-    # -- Autostart: kleine .vbs im Windows-Startordner an/aus --------------
-    STARTUP_VBS = os.path.join(
-        os.environ.get("APPDATA", ""), "Microsoft", "Windows",
-        "Start Menu", "Programs", "Startup", "Blitztext-Autostart.vbs")
-
-    def autostart_enabled():
-        return os.path.exists(STARTUP_VBS)
-
+    # -- Autostart: Logik liegt in autostart.py (auch von setup.bat genutzt) --
     def toggle_autostart(icon, item):
-        try:
-            if autostart_enabled():
-                os.remove(STARTUP_VBS)
-                print("[Blitztext] Autostart: AUS")
-            else:
-                launcher = os.path.join(APP_DIR, "Blitztext.vbs")
-                with open(STARTUP_VBS, "w") as f:
-                    f.write('CreateObject("WScript.Shell").Run '
-                            '"wscript.exe ""%s""", 0, False\n' % launcher)
-                print("[Blitztext] Autostart: AN")
-        except Exception as e:
-            print(f"[Warnung] Autostart: {e}")
+        autostart.set_enabled(not autostart.enabled())
 
     def open_vocab(icon, item):
         ensure_vocab_file()
@@ -844,10 +927,6 @@ def main():
             os.startfile(VOCAB_PATH)
         except Exception as e:
             print(f"[Warnung] Woerterbuch oeffnen: {e}")
-
-    def set_autostart(on):
-        if bool(on) != autostart_enabled():
-            toggle_autostart(None, None)
 
     def set_hotkey(which, value):
         """which: 'hotkey' oder 'hotkey_second'; value '' = aus (nur second).
@@ -870,8 +949,9 @@ def main():
             "cfg": cfg,
             "save": lambda: save_config(cfg),
             "devices": list_input_devices,
-            "autostart_get": autostart_enabled,
-            "autostart_set": set_autostart,
+            "autostart_get": autostart.enabled,
+            "autostart_set": autostart.set_enabled,
+            "refresh_tray": lambda: refresh_menu(icon, None),
             "open_vocab": lambda: open_vocab(None, None),
             "set_hotkey": set_hotkey,
             "reload_model": app.reload_model,
@@ -883,12 +963,12 @@ def main():
         # dynamisch: wird bei jedem Oeffnen des Menues neu erzeugt
         def items():
             if not app.history:
-                yield pystray.MenuItem("(noch nichts diktiert)", None, enabled=False)
-            for t in list(app.history):
-                label = t if len(t) <= 50 else t[:50] + "..."
+                yield pystray.MenuItem(lambda item: t("(noch nichts diktiert)"), None, enabled=False)
+            for eintrag in list(app.history):
+                label = eintrag if len(eintrag) <= 50 else eintrag[:50] + "..."
                 yield pystray.MenuItem(
                     label,
-                    (lambda s: (lambda icon, item: pyperclip.copy(s)))(t),
+                    (lambda s: (lambda icon, item: pyperclip.copy(s)))(eintrag),
                 )
         return pystray.Menu(items)
 
@@ -896,48 +976,82 @@ def main():
         icon.menu = build_menu()
         icon.update_menu()
 
+    upd = {"tag": None, "url": None}
+
+    def open_update(icon, item):
+        if upd["url"]:
+            import webbrowser
+            webbrowser.open(upd["url"])
+
+    def open_log(icon, item):
+        try:
+            os.startfile(logsetup.log_pfad(APP_DIR))
+        except Exception as e:
+            print(f"[Warnung] Protokoll oeffnen: {e}")
+
     def build_menu():
         return pystray.Menu(
+            pystray.MenuItem(lambda item: "⬆ %s: %s" % (t("Update verfügbar"), upd["tag"]),
+                             open_update, visible=lambda item: bool(upd["tag"])),
             # default=True -> Doppelklick auf das Tray-Icon oeffnet die Einstellungen
-            pystray.MenuItem("Einstellungen ...", open_settings_window, default=True),
+            pystray.MenuItem(lambda item: t("Einstellungen ..."), open_settings_window, default=True),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem(lambda item: f"Status: {app.state}", None, enabled=False),
-            pystray.MenuItem(lambda item: f"Hotkey: {cfg['hotkey']}", None, enabled=False),
+            pystray.MenuItem(lambda item: f"{t('Status')}: {app.state}", None, enabled=False),
+            pystray.MenuItem(lambda item: f"{t('Hotkey')}: {cfg['hotkey']}", None, enabled=False),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Mikrofon", mic_submenu()),
-            pystray.MenuItem("Sprache", lang_submenu()),
-            pystray.MenuItem("Verlauf (klick = kopieren)", history_submenu()),
+            pystray.MenuItem(lambda item: t("Mikrofon"), mic_submenu()),
+            pystray.MenuItem(lambda item: t("Sprache"), lang_submenu()),
+            pystray.MenuItem(lambda item: t("Verlauf (klick = kopieren)"), history_submenu()),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(
-                "Gedrueckt halten (Push-to-Talk)",
+                lambda item: t("Gedrückt halten (Push-to-Talk)"),
                 toggle_ptt,
                 checked=lambda item: cfg.get("push_to_talk", False),
             ),
             pystray.MenuItem(
-                "Automatisch einfuegen",
+                lambda item: t("Automatisch einfügen"),
                 toggle_paste,
                 checked=lambda item: cfg.get("paste", True),
             ),
             pystray.MenuItem(
-                "Automatisch Enter (absenden)",
+                lambda item: t("Automatisch Enter (absenden)"),
                 toggle_enter,
                 checked=lambda item: cfg.get("auto_enter", False),
             ),
             pystray.MenuItem(
-                "Mit Windows starten",
+                lambda item: t("Mit Windows starten"),
                 toggle_autostart,
-                checked=lambda item: autostart_enabled(),
+                checked=lambda item: autostart.enabled(),
             ),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Woerterbuch bearbeiten", open_vocab),
-            pystray.MenuItem("Mikrofonliste aktualisieren", refresh_menu),
-            pystray.MenuItem("Beenden", on_quit),
+            pystray.MenuItem(lambda item: t("Wörterbuch bearbeiten"), open_vocab),
+            pystray.MenuItem(lambda item: t("Mikrofonliste aktualisieren"), refresh_menu),
+            pystray.MenuItem(lambda item: t("Protokoll öffnen"), open_log),
+            pystray.MenuItem(lambda item: t("Beenden"), on_quit),
         )
 
     icon = pystray.Icon("blitztext", ICONS["loading"], "Blitztext - Modell wird geladen ...")
     icon.menu = build_menu()
     app.icon = icon
-    icon.run()
+
+    def _neue_version(tag, url):
+        upd.update(tag=tag, url=url)
+        try:
+            icon.update_menu()
+            icon.notify(t("Neue Version {tag} verfügbar").format(tag=tag), "Blitztext")
+        except Exception:
+            pass
+
+    if cfg.get("update_check", True):
+        updater.pruefen(VERSION, _neue_version)
+
+    def _nach_start(ic):
+        ic.visible = True                       # eigenes setup ersetzt das Standard-Setup
+        if erststart:                           # allererster Start: Einstellungen zeigen
+            time.sleep(1.5)
+            open_settings_window()
+
+    icon.run(setup=_nach_start)
 
 if __name__ == "__main__":
     main()

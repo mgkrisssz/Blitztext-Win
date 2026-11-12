@@ -26,6 +26,8 @@ import numpy as np
 import sounddevice as sd
 from PIL import Image, ImageDraw, ImageTk
 
+from i18n import t, set_language
+
 _lock = threading.Lock()
 _open = False
 
@@ -41,12 +43,12 @@ LANGS = [("Automatisch", ""), ("Deutsch", "de"), ("Englisch", "en"),
 
 # Whisper-Modelle: (Anzeigename, interner Name). Kleiner = schneller + weniger Speicher,
 # groesser = genauer. Beim ersten Auswaehlen wird das Modell einmalig heruntergeladen.
-MODELS = [("Tiny – winzig, sehr schnell, ungenau", "tiny"),
-          ("Base – sehr schnell, einfach", "base"),
-          ("Small – schnell, gut (CPU-tauglich)", "small"),
-          ("Medium – genauer, braucht mehr Power", "medium"),
-          ("Turbo – fast so gut wie Large, schneller", "large-v3-turbo"),
-          ("Large-v3 – beste Qualität (GPU empfohlen)", "large-v3")]
+MODELS = [("Tiny – winzig, ungenau", "tiny"),
+          ("Base – sehr schnell", "base"),
+          ("Small – schnell, gut (CPU)", "small"),
+          ("Medium – genauer, mehr Power", "medium"),
+          ("Turbo – fast wie Large, schneller", "large-v3-turbo"),
+          ("Large-v3 – beste Qualität (GPU)", "large-v3")]
 
 # Ampel-Farben fuer den Mikrofonpegel (Stil "mix")
 AMPEL = [(0.88, "#c53929"), (0.70, "#d9930d"), (0.0, "#2d8659")]
@@ -365,18 +367,18 @@ def _run(ctx):
             if not first:
                 tk.Frame(content, bg=pal["divider"], height=1
                          ).pack(fill="x", padx=20, pady=(12, 0))
-            tk.Label(content, text=text, bg=BGC, fg=pal["sect"],
+            tk.Label(content, text=t(text), bg=BGC, fg=pal["sect"],
                      font=(body, 8, "bold"), anchor="w"
                      ).pack(fill="x", padx=20, pady=((4 if first else 10), 0))
 
         def hint(text):
-            tk.Label(content, text=text, bg=BGC, fg=pal["subtle"], font=FS,
+            tk.Label(content, text=t(text), bg=BGC, fg=pal["subtle"], font=FS,
                      anchor="w").pack(fill="x", padx=22)
 
         def toggle_row(text, get, set_cb):
             row = tk.Frame(content, bg=BGC)
             row.pack(fill="x", padx=20, pady=4)
-            lbl = tk.Label(row, text=text, bg=BGC, fg=pal["text"], font=F,
+            lbl = tk.Label(row, text=t(text), bg=BGC, fg=pal["text"], font=F,
                            anchor="w", cursor="hand2")
             lbl.pack(side="left", fill="x", expand=True)
             TW, TH = 38, 22
@@ -418,14 +420,14 @@ def _run(ctx):
                     w = WW - 42
                 c._imgs = [_pill(c, w, 34, 8, pal["field_bg"], outline=pal["field_border"])]
                 c.create_image(0, 0, anchor="nw", image=c._imgs[0])
-                txt = text_get()
+                txt = t(text_get())
                 if len(txt) > 34:
                     txt = txt[:33] + "…"
                 c.create_text(14, 17, anchor="w", text=txt, fill=pal["text"], font=FB)
                 c.create_text(w - 14, 17, anchor="e", text="⌄", fill=pal["subtle"],
                               font=(body, 10, "bold"))
             for opt in options:
-                menu.add_command(label=opt, command=lambda o=opt: (on_pick(o), draw()))
+                menu.add_command(label=t(opt), command=lambda o=opt: (on_pick(o), draw()))
             c.bind("<Button-1>", lambda e: menu.tk_popup(c.winfo_rootx() + 8,
                                                          c.winfo_rooty() + 36))
             c.bind("<Configure>", draw)
@@ -442,7 +444,7 @@ def _run(ctx):
                     w = WW - 42
                 c._imgs = [_pill(c, w, 36, 8, pal["btn_bg"], outline=pal["btn_border"])]
                 c.create_image(0, 0, anchor="nw", image=c._imgs[0])
-                c.create_text(w / 2, 18, text=text, fill=pal["btn_text"],
+                c.create_text(w / 2, 18, text=t(text), fill=pal["btn_text"],
                               font=(body, 10, "bold"))
             c.bind("<Configure>", draw)
             c.bind("<Button-1>", lambda e: cmd())
@@ -451,7 +453,7 @@ def _run(ctx):
         def hotkey_row(text, which, clear_ok=False):
             row = tk.Frame(content, bg=BGC)
             row.pack(fill="x", padx=20, pady=4)
-            tk.Label(row, text=text, bg=BGC, fg=pal["text"], font=F,
+            tk.Label(row, text=t(text), bg=BGC, fg=pal["text"], font=F,
                      anchor="w").pack(side="left", fill="x", expand=True)
             CW, CH = 124, 28
             c = tk.Canvas(row, width=CW, height=CH, bg=BGC,
@@ -462,7 +464,7 @@ def _run(ctx):
                 c._imgs = [_pill(c, CW, CH, 7, pal["chip_bg"],
                                  outline=pal["chip_hot"] if hot else pal["chip_border"])]
                 c.create_image(0, 0, anchor="nw", image=c._imgs[0])
-                label = txt or (nice_key(cfg.get(which)) or "aus")
+                label = t(txt) if txt else (nice_key(cfg.get(which)) or t("aus"))
                 # Meldungen ("nur mit Strg/Alt ...") kleiner, sonst passt es nicht
                 fnt = (body, 8) if txt else (body, 9, "bold")
                 c.create_text(CW / 2, CH / 2, text=label,
@@ -475,7 +477,7 @@ def _run(ctx):
                 c._imgs = [_pill(c, CW, CH, 7, pal["chip_bg"],
                                  outline=pal["chip_hot"] if on else pal["chip_hot2"])]
                 c.create_image(0, 0, anchor="nw", image=c._imgs[0])
-                c.create_text(CW / 2, CH / 2, text="Taste drücken …",
+                c.create_text(CW / 2, CH / 2, text=t("Taste drücken …"),
                               fill=pal["chip_hot"] if on else pal["chip_hot2"],
                               font=(body, 9))
                 cap["pulse"] = root.after(550, pulse, not on)
@@ -494,7 +496,7 @@ def _run(ctx):
         def meter_row():
             row = tk.Frame(content, bg=BGC)
             row.pack(fill="x", padx=22, pady=(2, 0))
-            tk.Label(row, text="Pegel", bg=BGC, fg=pal["subtle"],
+            tk.Label(row, text=t("Pegel"), bg=BGC, fg=pal["subtle"],
                      font=(body, 8)).pack(side="left")
             c = tk.Canvas(row, height=5, bg=BGC, highlightthickness=0, bd=0)
             c.pack(side="left", fill="x", expand=True, padx=(10, 0))
@@ -537,7 +539,7 @@ def _run(ctx):
                 for i, key in enumerate(order):
                     active = (key == cur)
                     c.create_text(3 + (i + 0.5) * seg_w, 15,
-                                  text=THEMES[key]["label"],
+                                  text=t(THEMES[key]["label"]),
                                   fill=pal["text"] if active else pal["subtle"],
                                   font=(body, 9, "bold" if active else "normal"))
             def click(e):
@@ -582,8 +584,8 @@ def _run(ctx):
         hk2 = nice_key(cfg.get("hotkey_second"))
         lang2 = next((l for l, c in LANGS if c == cfg.get("second_language")),
                      cfg.get("second_language") or "")
-        parts = [f"Hotkey {hk}"] + ([f"{hk2} = {lang2}"] if hk2 else []) \
-                + ["Esc = verwerfen"]
+        parts = [f"{t('Hotkey')} {hk}"] + ([f"{hk2} = {t(lang2)}"] if hk2 else []) \
+                + [t("Esc = verwerfen")]
         sub = tk.Label(content, text="  ·  ".join(parts), bg=BGC,
                        fg=pal["subtle"], font=FS, anchor="w")
         sub.pack(fill="x", padx=21)
@@ -664,9 +666,23 @@ def _run(ctx):
                    lambda v: ctx["autostart_set"](bool(v)))
         toggle_row("Status-HUD anzeigen", *cfg_toggle("overlay"))
         hint("wirkt nach Neustart der App")
+        toggle_row("Nach Updates suchen", *cfg_toggle("update_check"))
+        hint("fragt gelegentlich bei GitHub nach einer neuen Version")
 
         section("DARSTELLUNG")
         seg_row()
+        UI_LANGS = [("Automatisch", "auto"), ("Deutsch", "de"), ("English", "en")]
+        ui_to_label = {c: l for l, c in UI_LANGS}
+        def ui_pick(val):
+            cfg["ui_language"] = dict(UI_LANGS)[val]
+            save()
+            set_language(cfg["ui_language"])
+            if ctx.get("refresh_tray"):
+                ctx["refresh_tray"]()
+            rebuild()
+        select_row(lambda: ui_to_label.get(cfg.get("ui_language") or "auto", "Automatisch"),
+                   [l for l, _ in UI_LANGS], ui_pick)
+        hint("Oberfläche")
 
         pill_button("Wörterbuch bearbeiten", lambda: ctx["open_vocab"]())
 

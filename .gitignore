@@ -21,3 +21,6 @@ blitztext.bak-*.py
 
 # Lokale Claude-Code-Einstellungen
 .claude/
+
+# Protokoll
+blitztext.log*

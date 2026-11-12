@@ -9,7 +9,8 @@ auf deinem eigenen PC. Keine Konten, keine API-Keys, keine Daten verlassen den R
 > *English in short:* Local, free push-to-talk dictation for Windows. Hotkey → speak → hotkey → text is
 > pasted at your cursor. Runs Whisper on your own PC (NVIDIA GPU optional, CPU works too).
 > Choose the model size and hotkeys in the settings window. Setup: install Python 3.10+, run `setup.bat`,
-> start with `Blitztext.vbs`. MIT licensed. The UI is in German; contributions for translations are welcome.
+> start with `Blitztext.vbs`. MIT licensed. The interface is available in **German and English**
+> (follows your Windows language, switchable in the settings).
 
 Windows-Nachbau der Idee von [blitztext-app](https://github.com/cmagnussen/blitztext-app)
 (macOS) von cmagnussen – mit freundlicher Erlaubnis des Autors.
@@ -23,15 +24,18 @@ Windows-Nachbau der Idee von [blitztext-app](https://github.com/cmagnussen/blitz
 - Ein Mikrofon
 - **Optional:** eine NVIDIA-Grafikkarte – damit ist das beste Modell blitzschnell. Ohne läuft es auf der CPU
   (dann ein kleineres Modell nehmen, siehe unten).
-- Platz: ca. 2 GB für die Programmpakete + 0,1–3 GB für das Sprachmodell (je nach Wahl)
+- Platz: ca. 0,6 GB für die Programmpakete (mit NVIDIA-Karte ca. 2 GB) + 0,1–3 GB für das Sprachmodell (je nach Wahl)
 
 ## Installation
 1. Dieses Repo herunterladen (grüner Button **Code → Download ZIP**, entpacken) oder mit Git klonen.
-2. **`setup.bat`** doppelklicken → legt eine eigene Python-Umgebung (`.venv`) an und lädt alle Pakete.
-   Das dauert einige Minuten.
-3. **`start_test.bat`** doppelklicken → Blitztext startet (mit Log-Fenster, gut zum Ausprobieren).
-   Im Alltag lieber **`Blitztext.vbs`** (läuft unsichtbar im Hintergrund).
-4. Beim allerersten Start lädt Blitztext einmalig das Sprachmodell herunter. Solange ist das Tray-Icon
+2. **`setup.bat`** doppelklicken. Das Skript prüft Python, erkennt selbst, ob du eine NVIDIA-Karte hast
+   (und installiert dann die GPU-Beschleunigung mit), legt eine eigene Python-Umgebung (`.venv`) an und lädt alle
+   Pakete. Das dauert einige Minuten. Am Ende fragt es, ob Blitztext **mit Windows starten** soll und ob es
+   **gleich losgehen** darf.
+3. Später startest du mit **`Blitztext.vbs`** (läuft unsichtbar im Hintergrund) oder mit **`start_test.bat`**
+   (mit Log-Fenster, gut zum Ausprobieren).
+4. Beim allerersten Start lädt Blitztext einmalig das Sprachmodell herunter – **den Fortschritt siehst du in
+   Prozent unten am Bildschirm** – und öffnet danach die Einstellungen. Solange das Modell lädt, ist das Tray-Icon
    (unten rechts in der Taskleiste) **grau**.
 
 **Beim ersten Start wählt Blitztext selbst das passende Modell:**
@@ -68,8 +72,8 @@ Icon-Farben: grau = Modell lädt · blau = bereit · rot = nimmt auf · orange =
 | **Modell** | Größe des Whisper-Modells (siehe unten) |
 | **Sprache** | Diktiersprache oder Automatik, optional direkt ins Englische übersetzen |
 | **Ausgabe** | Automatisch einfügen, Enter, Tippen statt Einfügen, Sprachbefehle |
-| **System** | Mit Windows starten, Status-Anzeige (HUD) |
-| **Darstellung** | Drei Stile: Mix, Claude, Hell |
+| **System** | Mit Windows starten, Status-Anzeige (HUD), Update-Hinweis ein/aus |
+| **Darstellung** | Drei Stile (Mix, Claude, Hell) und Oberflächen-Sprache (Automatisch, Deutsch, English) |
 
 Das Fenster scrollt mit dem Mausrad, falls dein Bildschirm klein ist.
 
@@ -99,6 +103,12 @@ auch wenn das Gerät (z. B. Headset) gerade nicht verbunden ist; sobald es wiede
 sonst greift der System-Standard.
 > Tipp: Virtuelle Geräte wie „SteelSeries Sonar – Microphone“ liefern oft Stille. Lieber dein echtes Mikro wählen.
 
+## Update-Hinweis
+Blitztext fragt beim Start im Hintergrund bei GitHub, ob es eine neue Version gibt, und zeigt dann im
+Tray-Menü einen Eintrag „Update verfügbar“ (Klick öffnet die Release-Seite). Es wird **nichts automatisch
+installiert**, und es werden keine Daten von dir gesendet – nur die übliche Web-Anfrage (wie beim Öffnen einer Webseite).
+Abschalten: Einstellungsfenster → System → „Nach Updates suchen“ oder `"update_check": false` in `config.json`.
+
 ## Autostart
 Einstellungsfenster → **Mit Windows starten** (legt eine kleine Starter-Datei im Autostart-Ordner an,
 Haken entfernen = wieder weg).
@@ -119,13 +129,19 @@ Nach Änderungen an der Datei die App neu starten.
 | `initial_prompt` | zusätzlicher Kontext für die Erkennung (neben dem Wörterbuch) |
 | `max_seconds` | Aufnahme-Limit in Sekunden (`0` = aus, Standard 300) |
 | `app_profiles` | Fenstertitel-Schnipsel → Überschreibungen, z. B. `"whatsapp": {"auto_enter": true}` |
+| `ui_language` | Oberfläche: `auto` (Windows-Sprache), `de` oder `en` |
+| `update_check` | `false` = keine Update-Abfrage bei GitHub |
 | `spielmodus_pfad` | Optional, nur für Fortgeschrittene: Ordner mit einem eigenen `spielmodus.py`, das bei laufendem Spiel auf ein sparsames Modell wechselt |
 
 ## Probleme?
+- **Protokoll:** Blitztext schreibt alles in `blitztext.log` (Tray-Menü → „Protokoll öffnen“), auch wenn es
+  unsichtbar läuft – und auch harte Abstürze. Bei einer Fehlermeldung (Issue) bitte die letzten Zeilen anhängen.
 - **Kein Text kommt an / Icon bleibt grau:** Beim ersten Start lädt das Modell erst herunter (Internet nötig,
-  einmalig). Mit `start_test.bat` siehst du im Fenster, was los ist.
-- **Läuft auf der CPU, obwohl ich eine NVIDIA-Karte habe:** Aktuellen NVIDIA-Treiber installieren und
-  `setup.bat` nochmal ausführen.
+  einmalig, Fortschritt siehst du am Bildschirm). Mit `start_test.bat` siehst du im Fenster, was los ist.
+- **Läuft auf der CPU, obwohl ich eine NVIDIA-Karte habe:** Aktuellen NVIDIA-Treiber installieren (`nvidia-smi`
+  muss in der Eingabeaufforderung funktionieren) und `setup.bat` nochmal ausführen.
+- **Text im Fenster wirkt unscharf (Windows-Skalierung 125 %/150 %):** Blitztext schaltet dafür das scharfe
+  Zeichnen ein (Windows 10 ab Version 1809). Falls es bei dir trotzdem unscharf ist, bitte ein Issue aufmachen.
 - **Zu langsam:** ein kleineres Modell wählen (siehe oben).
 - **Nur Stille aufgenommen:** anderes Mikrofon im Einstellungsfenster wählen, der Pegelbalken muss ausschlagen.
 - **Text landet nicht im Zielprogramm:** „Tippen statt Einfügen“ einschalten.

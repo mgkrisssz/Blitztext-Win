@@ -12,6 +12,8 @@ import math
 import queue
 import threading
 
+from i18n import t
+
 # Fenster-/Stil-Konstanten
 W, H = 340, 84
 MARGIN = 8
@@ -46,6 +48,7 @@ class Overlay:
     def recording(self):   self._put(("recording", None))
     def processing(self):  self._put(("processing", None))
     def result(self, txt): self._put(("result", txt))
+    def status(self, txt): self._put(("status", txt))   # dauerhafter Text mit Wellen (z. B. Modell laedt)
     def hide(self):        self._put(("hide", None))
     def stop(self):        self._put(("quit", None))
 
@@ -139,13 +142,20 @@ class Overlay:
     def _handle(self, cmd, arg):
         if cmd == "recording":
             self.mode = "rec"
-            self.c.itemconfig(self.label, text="Höre zu …", fill=TEXT)
+            self.c.itemconfig(self.label, text=t("Höre zu …"), fill=TEXT)
             self.c.itemconfig(self.dot, fill=COL_REC)
             self._set_bar_color(COL_REC)
             self.root.deiconify()
         elif cmd == "processing":
             self.mode = "proc"
-            self.c.itemconfig(self.label, text="Verarbeite …", fill=TEXT)
+            self.c.itemconfig(self.label, text=t("Verarbeite …"), fill=TEXT)
+            self.c.itemconfig(self.dot, fill=COL_PROC)
+            self._set_bar_color(COL_PROC)
+            self.root.deiconify()
+        elif cmd == "status":
+            self.mode = "proc"
+            txt = (arg or "").strip()
+            self.c.itemconfig(self.label, text=txt[:46], fill=TEXT)
             self.c.itemconfig(self.dot, fill=COL_PROC)
             self._set_bar_color(COL_PROC)
             self.root.deiconify()
@@ -154,7 +164,7 @@ class Overlay:
             txt = (arg or "").strip().replace("\n", " ")
             if len(txt) > 46:
                 txt = txt[:45] + "…"
-            self.c.itemconfig(self.label, text=txt or "(nichts erkannt)", fill=TEXT)
+            self.c.itemconfig(self.label, text=txt or t("(nichts erkannt)"), fill=TEXT)
             self.c.itemconfig(self.dot, fill=COL_DONE)
             self._set_bar_color(COL_DONE)
             self.root.deiconify()

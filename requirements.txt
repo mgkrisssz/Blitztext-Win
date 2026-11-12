@@ -1,13 +1,10 @@
 # Blitztext-Win - Abhaengigkeiten
-faster-whisper
-sounddevice
-numpy
-pynput
-pyperclip
-pystray
-pillow
-
-# Nur fuer NVIDIA-GPU noetig (auf PCs ohne NVIDIA einfach mitinstallieren -
-# die App faellt automatisch auf die CPU zurueck):
-nvidia-cublas-cu12
-nvidia-cudnn-cu12
+# Versionen sind auf dem Stand getestet, mit dem die App entwickelt wurde (Python 3.10).
+# Die Obergrenzen verhindern, dass eine spaetere Hauptversion die App unbemerkt kaputt macht.
+faster-whisper>=1.2.1,<2
+sounddevice>=0.5,<0.6
+numpy>=2.0,<3
+pynput>=1.8,<2
+pyperclip>=1.9,<2
+pystray>=0.19,<0.20
+pillow>=11,<13
