@@ -83,7 +83,7 @@ EN = {
     'Fügt den Text am Cursor ein.': 'Pastes the text at your cursor.',
     'Dein vorher Kopiertes bleibt erhalten.': 'Keeps what you copied before.',
     'Drückt nach dem Einfügen Enter.': 'Presses Enter after pasting.',
-    'Tippt statt Strg+V, falls Einfügen nicht klappt.': 'Types instead of Ctrl+V if pasting fails.',
+    'Wie von Hand getippt. Nur nötig, wenn Einfügen nicht klappt.': 'Typed as by hand. Only needed if pasting does not work.',
     '„neue Zeile“ wird zum Umbruch.': '“new line” becomes a line break.',
     'Startet mit deiner Anmeldung.': 'Starts when you sign in.',
     'Anzeige am Bildschirmrand beim Aufnehmen.': 'Display at the screen edge while recording.',

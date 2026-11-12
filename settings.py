@@ -64,7 +64,7 @@ TIPS = {
     'Automatisch einfügen': 'Fügt den Text am Cursor ein.',
     'Zwischenablage zurücksetzen': 'Dein vorher Kopiertes bleibt erhalten.',
     'Automatisch Enter (absenden)': 'Drückt nach dem Einfügen Enter.',
-    'Tippen statt Einfügen': 'Tippt statt Strg+V, falls Einfügen nicht klappt.',
+    'Tippen statt Einfügen': 'Wie von Hand getippt. Nur nötig, wenn Einfügen nicht klappt.',
     'Sprachbefehle': '„neue Zeile“ wird zum Umbruch.',
     'Mit Windows starten': 'Startet mit deiner Anmeldung.',
     'Status-HUD anzeigen': 'Anzeige am Bildschirmrand beim Aufnehmen.',
