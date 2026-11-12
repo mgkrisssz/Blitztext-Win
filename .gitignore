@@ -1,0 +1,23 @@
+# Virtuelle Umgebung (2,2 GB, wird aus requirements.txt neu erzeugt)
+.venv/
+__pycache__/
+*.pyc
+
+# Laufzeit-Ausgaben
+*.log
+*.err
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Persoenliche Einstellungen/Daten (werden beim ersten Start automatisch angelegt)
+config.json
+woerterbuch.txt
+*.bak
+*.bak-*
+*.bak*.py
+blitztext.bak-*.py
+
+# Lokale Claude-Code-Einstellungen
+.claude/

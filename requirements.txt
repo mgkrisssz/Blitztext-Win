@@ -1,0 +1,13 @@
+# Blitztext-Win - Abhaengigkeiten
+faster-whisper
+sounddevice
+numpy
+pynput
+pyperclip
+pystray
+pillow
+
+# Nur fuer NVIDIA-GPU noetig (auf PCs ohne NVIDIA einfach mitinstallieren -
+# die App faellt automatisch auf die CPU zurueck):
+nvidia-cublas-cu12
+nvidia-cudnn-cu12
