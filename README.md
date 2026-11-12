@@ -203,5 +203,5 @@ sind willkommen (siehe [CONTRIBUTING.md](CONTRIBUTING.md)). Die Texterkennung ka
 - Bibliotheken: `sounddevice`, `numpy`, `pynput` (LGPL), `pyperclip`, `pystray` (LGPL), `pillow`.
   Für NVIDIA-Karten werden die Pakete `nvidia-cublas-cu12` und `nvidia-cudnn-cu12` von NVIDIA per `pip` geladen
   (NVIDIA-Lizenzbedingungen, nicht Teil dieses Repos).
-- Schriften im Einstellungsfenster: **Lora** und **Familjen Grotesk**, beide unter der SIL Open Font License 1.1
+- Schrift des Titels im Einstellungsfenster: **Lora** unter der SIL Open Font License 1.1
   ([fonts/LICENSE-OFL.txt](fonts/LICENSE-OFL.txt)).
