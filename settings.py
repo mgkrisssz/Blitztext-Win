@@ -3,7 +3,7 @@ Einstellungsfenster fuer Blitztext (Doppelklick auf das Tray-Icon).
 
 Design: randlose helle "Bubble" mit runden Ecken (DWM), flache Flaechen,
 drei umschaltbare Stile (cfg["theme"]):
-  "mix"    - weiss, Lora-Titel + Familjen Grotesk, Terrakotta/Gruen (Standard)
+  "mix"    - weiss, Lora-Titel, gut lesbare Windows-Schrift, Terrakotta/Gruen (Standard)
   "claude" - warmes Creme, gleiche Schriften, Terrakotta
   "hell"   - Segoe UI Variable, Windows-Blau
 Die Schriften liegen als TTF in ./fonts und werden nur fuer diesen Prozess
@@ -80,7 +80,7 @@ AMPEL = [(0.88, "#c53929"), (0.70, "#d9930d"), (0.0, "#2d8659")]
 THEMES = {
     "mix": dict(
         label="Mix",
-        bg="#ffffff", border="#e5e4de", text="#2b2a25", subtle="#8d8b80",
+        bg="#ffffff", border="#e5e4de", text="#2b2a25", subtle="#6b695e",
         divider="#f1f0ea", sect="#c96442",
         chip_bg="#fcfcfa", chip_border="#dcdad0", chip_text="#4a483d",
         chip_hot="#c96442", chip_hot2="#dd8a68",
@@ -94,7 +94,7 @@ THEMES = {
     ),
     "claude": dict(
         label="Claude",
-        bg="#faf9f5", border="#e8e5da", text="#35322a", subtle="#94907f",
+        bg="#faf9f5", border="#e8e5da", text="#35322a", subtle="#6c6858",
         divider="#efede3", sect="#94907f",
         chip_bg="#ffffff", chip_border="#ddd9c9", chip_text="#56523f",
         chip_hot="#c96442", chip_hot2="#dd8a68",
@@ -108,7 +108,7 @@ THEMES = {
     ),
     "hell": dict(
         label="Hell",
-        bg="#ffffff", border="#e4e6ea", text="#1b1e24", subtle="#878d97",
+        bg="#ffffff", border="#e4e6ea", text="#1b1e24", subtle="#656b75",
         divider="#f0f1f4", sect="#878d97",
         chip_bg="#fafbfc", chip_border="#d9dce1", chip_text="#3c414a",
         chip_hot="#0f6cbd", chip_hot2="#5b97d6",
@@ -350,14 +350,13 @@ def _run(ctx):
         pal = THEMES.get(cfg.get("theme") or "mix", THEMES["mix"])
         BGC = pal["bg"]
 
-        # Schriften: Familjen Grotesk/Lora falls geladen, sonst Segoe UI
-        if pal["serif"] and "Familjen Grotesk" in fams:
-            body = "Familjen Grotesk"
-        elif not pal["serif"] and "Segoe UI Variable Text" in fams:
+        # Schriften: Fliesstext in der klaren Windows-Schrift (Familjen Grotesk war schwer
+        # zu lesen); nur der Titel nutzt bei den Serif-Stilen die Schrift Lora
+        if "Segoe UI Variable Text" in fams:
             body = "Segoe UI Variable Text"
         else:
             body = "Segoe UI"
-        F, FS, FB = (body, 11), (body, 9), (body, 10)
+        F, FS, FB = (body, 11), (body, 10), (body, 10)
         if pal["serif"] and "Lora" in fams:
             FT = ("Lora", 14)              # die Datei ist SemiBold
         elif "Segoe UI Variable Display" in fams and not pal["serif"]:
@@ -399,7 +398,7 @@ def _run(ctx):
 
         def hint(text):
             tk.Label(content, text=t(text), bg=BGC, fg=pal["subtle"], font=FS,
-                     anchor="w").pack(fill="x", padx=22)
+                     anchor="w", justify="left", wraplength=WW - 48).pack(fill="x", padx=22)
 
         def attach_tip(widgets, key):
             """Kleine Erklaerung, wenn die Maus kurz ueber der Zeile verweilt."""
@@ -428,8 +427,9 @@ def _run(ctx):
                 tw.overrideredirect(True)
                 tw.attributes("-topmost", True)
                 tw.configure(bg=pal["text"])
-                tk.Label(tw, text=t(tip), bg=pal["text"], fg=pal["bg"], font=FS,
-                         justify="left", wraplength=220, padx=14, pady=8).pack()
+                tk.Label(tw, text=t(tip), bg=pal["text"], fg="#ffffff",
+                         font=("Segoe UI", 11), justify="left", wraplength=260,
+                         padx=16, pady=9).pack()
                 _round_corners(tw)                     # runde "Blase"
                 tw.update_idletasks()
                 bw, bh = tw.winfo_reqwidth(), tw.winfo_reqheight()
@@ -807,7 +807,7 @@ def _run(ctx):
                 ctx["reload_model"]()      # lädt im Hintergrund neu (Icon grau)
         select_row(lambda: model_to_label.get(cfg.get("model"), cfg.get("model") or "?"),
                    [l for l, _ in MODELS], model_pick, tip="Modell-Auswahl")
-        hint("Wechsel lädt das Modell neu · beim ersten Mal Download")
+        hint("Wechsel lädt neu · beim ersten Mal Download")
 
         section("SPRACHE")
         code_to_label = {c: l for l, c in LANGS}
@@ -823,9 +823,7 @@ def _run(ctx):
         toggle_row("Automatisch Enter (absenden)", *cfg_toggle("auto_enter"))
         toggle_row("Tippen statt Einfügen", *cfg_toggle("type_instead_of_paste"))
         toggle_row("Zwischenablage zurücksetzen", *cfg_toggle("restore_clipboard"))
-        hint("nach dem Einfügen ist wieder dein vorher Kopiertes drin")
         toggle_row("Sprachbefehle", *cfg_toggle("voice_commands"))
-        hint("»neue Zeile« / »neuer Absatz« sprechen = Umbruch")
 
         section("SYSTEM")
         toggle_row("Mit Windows starten",
@@ -834,7 +832,6 @@ def _run(ctx):
         toggle_row("Status-HUD anzeigen", *cfg_toggle("overlay"))
         hint("wirkt nach Neustart der App")
         toggle_row("Nach Updates suchen", *cfg_toggle("update_check"))
-        hint("fragt gelegentlich bei GitHub nach einer neuen Version")
 
         section("DARSTELLUNG")
         seg_row()
