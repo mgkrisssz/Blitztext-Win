@@ -341,10 +341,9 @@ def apply_voice_commands(text):
 # 3) Tray-Icon-Grafiken je Status
 # ---------------------------------------------------------------------------
 def make_icon(color):
-    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    d.ellipse((8, 8, 56, 56), fill=color)
-    return img
+    """Tray-Icon: Blitz-Logo, die Hintergrundfarbe zeigt den Status."""
+    from logo import blitz_icon
+    return blitz_icon(color, 64)
 
 ICONS = {
     "loading":      make_icon((150, 150, 150, 255)),  # grau

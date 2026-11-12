@@ -1,4 +1,6 @@
-# ⚡ Blitztext-Win
+<p align="center"><img src="docs/logo.png" width="96" alt="Blitztext-Win Logo"></p>
+
+<h1 align="center">Blitztext-Win</h1>
 
 **Sprache zu Text per Tastendruck – komplett lokal, kostenlos, ohne Cloud.**
 Taste drücken, sprechen, Taste nochmal drücken – der Text erscheint dort, wo dein Cursor steht
