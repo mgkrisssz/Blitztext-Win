@@ -746,6 +746,8 @@ def _run(ctx):
         toggle_row("Automatisch einfügen", *cfg_toggle("paste"))
         toggle_row("Automatisch Enter (absenden)", *cfg_toggle("auto_enter"))
         toggle_row("Tippen statt Einfügen", *cfg_toggle("type_instead_of_paste"))
+        toggle_row("Zwischenablage zurücksetzen", *cfg_toggle("restore_clipboard"))
+        hint("nach dem Einfügen ist wieder dein vorher Kopiertes drin")
         toggle_row("Sprachbefehle", *cfg_toggle("voice_commands"))
         hint("»neue Zeile« / »neuer Absatz« sprechen = Umbruch")
 

@@ -1,0 +1,34 @@
+name: Fehler melden / Bug report
+description: Etwas funktioniert nicht / Something does not work
+labels: ["bug"]
+body:
+  - type: textarea
+    id: was
+    attributes:
+      label: Was ist passiert? / What happened?
+      description: Was hast du erwartet, was ist stattdessen passiert?
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Windows- und Python-Version
+      placeholder: "Windows 11 23H2, Python 3.12"
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: Grafikkarte / Graphics card
+      placeholder: "NVIDIA RTX 3060 / AMD Radeon / keine"
+  - type: input
+    id: modell
+    attributes:
+      label: Gewähltes Modell / Model
+      placeholder: "small, large-v3 ..."
+  - type: textarea
+    id: log
+    attributes:
+      label: Auszug aus blitztext.log
+      description: Tray-Menü → „Protokoll öffnen“. Bitte private Texte vorher entfernen.
+      render: text

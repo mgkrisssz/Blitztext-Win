@@ -56,6 +56,8 @@ EN = {
     "Automatisch Enter (absenden)": "Press Enter automatically (send)",
     "Tippen statt Einfügen": "Type instead of paste",
     "Sprachbefehle": "Voice commands",
+    "Zwischenablage zurücksetzen": "Restore clipboard",
+    "nach dem Einfügen ist wieder dein vorher Kopiertes drin": "after pasting, what you copied before is back",
     "»neue Zeile« / »neuer Absatz« sprechen = Umbruch": "say “new line” / “new paragraph” = line break",
     # --- System
     "Mit Windows starten": "Start with Windows",

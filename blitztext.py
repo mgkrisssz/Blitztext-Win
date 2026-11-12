@@ -99,6 +99,7 @@ DEFAULT_CONFIG = {
     "second_language": "en",          # Sprache des Zweit-Hotkeys (Kuerzel wie "en", "hu", "fr" ...)
     "theme": "mix",                   # Stil des Einstellungsfensters: "mix", "claude", "hell"
     "ui_language": "auto",            # Oberflaeche: "auto" (Windows-Sprache), "de", "en"
+    "restore_clipboard": True,        # nach dem Einfuegen die vorher kopierte Zwischenablage wiederherstellen
     "update_check": True,             # beim Start bei GitHub nach neuer Version fragen (nur Hinweis)
     "app_profiles": {                 # Fenstertitel-Schnipsel -> Einstellungs-Overrides
         "whatsapp": {"auto_enter": True},
@@ -195,14 +196,63 @@ def load_config():
 VOCAB_PATH = os.path.join(APP_DIR, "woerterbuch.txt")
 
 VOCAB_TEMPLATE = """# Blitztext-Woerterbuch
-# Ein Begriff pro Zeile: Namen, Fachwoerter, Abkuerzungen, die Whisper
-# sonst falsch schreibt. Zeilen mit '#' werden ignoriert.
-# Nicht uebertreiben: ab ca. 50 Begriffen laesst der Effekt nach.
-# Beispiele (Raute entfernen oder eigene Begriffe darunter schreiben):
+# 1) Ein Begriff pro Zeile: Namen, Fachwoerter, Abkuerzungen, die Whisper
+#    sonst falsch schreibt. Zeilen mit '#' werden ignoriert.
+#    Nicht uebertreiben: ab ca. 50 Begriffen laesst der Effekt nach.
+# 2) Feste Ersetzung mit  =>  : links steht, was Whisper schreibt, rechts was
+#    daraus werden soll (Gross-/Kleinschreibung links egal, ganze Woerter).
+# Beispiele (Raute entfernen oder eigene Eintraege darunter schreiben):
 Blitztext
 # Max Mustermann
 # Kubernetes
+# n acht n => n8n
+# mfg => Mit freundlichen Grüßen
 """
+
+def _parse_replacements(zeilen):
+    """Zeilen 'links => rechts' -> Liste (Regex, Ersatz)."""
+    ergebnis = []
+    for line in zeilen:
+        line = line.strip()
+        if not line or line.startswith("#") or "=>" not in line:
+            continue
+        links, rechts = (x.strip() for x in line.split("=>", 1))
+        if links:
+            ergebnis.append((re.compile(r"(?<!\w)" + re.escape(links) + r"(?!\w)", re.IGNORECASE),
+                             rechts))
+    return ergebnis
+
+
+def load_replacements():
+    try:
+        with open(VOCAB_PATH, "r", encoding="utf-8") as f:
+            return _parse_replacements(f.read().splitlines())
+    except Exception:
+        return []
+
+
+def apply_replacements(text, ersetzungen):
+    for muster, ersatz in ersetzungen:
+        text = muster.sub(lambda m: ersatz, text)
+    return text
+
+
+# Saetze, die Whisper bei Stille/Rauschen erfindet (Trainingsdaten: Videountertitel)
+_HALLU_IMMER = re.compile(
+    r"untertitel(ung)?\b.*|amara\.org|subtitles? by\b.*|thanks? for watching.*|"
+    r"thank you for watching.*|vielen dank fürs (zu)?(schauen|sehen).*|www\.\S+", re.IGNORECASE)
+_HALLU_BEI_STILLE = {"thank you", "thanks", "vielen dank", "danke", "bye", "tschüss",
+                     "danke schön", "you"}
+
+
+def ist_halluzination(text, peak, dauer):
+    """True, wenn der erkannte Text sehr wahrscheinlich nur erfunden ist.
+    Echte Saetze wie 'Vielen Dank.' bleiben erhalten, ausser die Aufnahme war fast still/kurz."""
+    roh = re.sub(r"[^\w\s.]", "", text.strip().lower()).strip(" .")
+    if _HALLU_IMMER.fullmatch(roh):
+        return True
+    return roh in _HALLU_BEI_STILLE and (peak < 0.02 or dauer < 1.2)
+
 
 def ensure_vocab_file():
     if not os.path.exists(VOCAB_PATH):
@@ -214,14 +264,18 @@ def ensure_vocab_file():
 
 def load_vocab():
     """Begriffe aus woerterbuch.txt einlesen (wird vor jeder Transkription gelesen,
-    Aenderungen wirken also ohne Neustart)."""
+    Aenderungen wirken also ohne Neustart). Bei Ersetzungs-Zeilen ("a => b") dient
+    die rechte Seite als Erkennungshilfe."""
     words = []
     try:
         with open(VOCAB_PATH, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if line and not line.startswith("#"):
-                    words.append(line)
+                    if "=>" in line:
+                        line = line.split("=>", 1)[1].strip()
+                    if line:
+                        words.append(line)
     except FileNotFoundError:
         pass
     except Exception as e:
@@ -629,10 +683,15 @@ class Blitztext:
                     initial_prompt=prompt,
                 )
                 text = "".join(s.text for s in segments).strip()
+            dur = audio.shape[0] / self.cfg["samplerate"]
+            if text and ist_halluzination(text, peak, dur):
+                print(f"[Blitztext] Vermutlich erfundener Text bei Stille verworfen: {text!r}")
+                text = ""
             if text and self.cfg.get("voice_commands", True):
                 text = apply_voice_commands(text)
+            if text:
+                text = apply_replacements(text, load_replacements())
             dt = time.time() - t0
-            dur = audio.shape[0] / self.cfg["samplerate"]
             print(f"[Blitztext] {dur:.1f}s Audio in {dt:.2f}s transkribiert: {text!r}")
         except Exception as e:
             print(f"[Fehler] Transkription: {e}")
@@ -675,6 +734,7 @@ class Blitztext:
 
         print(f"[debug] output_text: fuege ein (paste={opt('paste', True)}, "
               f"type={opt('type_instead_of_paste')}): {text!r}")
+        alt_zwischenablage = None
         if not opt("paste", True):
             pyperclip.copy(text)
             print("[Blitztext] Text in Zwischenablage kopiert.")
@@ -686,6 +746,11 @@ class Blitztext:
             self.kbd.type(text)
         else:
             # Standard: ueber Zwischenablage + Strg+V einfuegen
+            if self.cfg.get("restore_clipboard", True):
+                try:
+                    alt_zwischenablage = pyperclip.paste()   # nur Text; Bilder/Dateien bleiben nicht erhalten
+                except Exception:
+                    alt_zwischenablage = None
             pyperclip.copy(text)
             time.sleep(0.08)
             self.kbd.press(Key.ctrl)
@@ -699,6 +764,15 @@ class Blitztext:
             self.kbd.press(Key.enter)
             self.kbd.release(Key.enter)
             print("[Blitztext] Auto-Enter gedrueckt.")
+
+        # Vorher Kopiertes zurueckholen (erst nach kurzer Pause, damit das Zielprogramm
+        # die Diktat-Zwischenablage sicher gelesen hat)
+        if alt_zwischenablage:
+            time.sleep(0.35)
+            try:
+                pyperclip.copy(alt_zwischenablage)
+            except Exception as e:
+                print(f"[Warnung] Zwischenablage zurueckholen: {e}")
 
     # ---- Hotkey-Steuerung ----------------------------------------------
     def _stop_async(self):

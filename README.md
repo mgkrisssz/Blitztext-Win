@@ -59,6 +59,10 @@ Icon-Farben: grau = Modell lädt · blau = bereit · rot = nimmt auf · orange =
   Hauptsprache umzustellen – praktisch, wenn du zwischen zwei Sprachen wechselst
 - **Sprachbefehle:** „neue Zeile“ / „neuer Absatz“ sprechen = echter Umbruch (auch „new line“ / „új sor“)
 - **Verlauf:** die letzten 10 Diktate stehen im Tray-Menü, Klick = in die Zwischenablage
+- **Zwischenablage bleibt, wie sie war:** nach dem Einfügen holt Blitztext zurück, was du vorher kopiert hattest
+  (nur Text, abschaltbar)
+- **Keine erfundenen Sätze:** Whisper erfindet bei Stille gern „Untertitel der Amara.org-Community“ oder
+  „Thank you“. Solche Treffer werden verworfen, echte Sätze bleiben
 - **Wörterbuch:** eigene Namen und Fachbegriffe, die Whisper sonst falsch schreibt
 - **App-Profile:** je nach aktivem Fenster andere Einstellungen – z. B. in WhatsApp automatisch Enter drücken
   (siehe `app_profiles` unten)
@@ -74,7 +78,7 @@ Icon-Farben: grau = Modell lädt · blau = bereit · rot = nimmt auf · orange =
 | **Mikrofon** | Gerät wählen, mit Live-Pegelanzeige |
 | **Modell** | Größe des Whisper-Modells (siehe unten) |
 | **Sprache** | Diktiersprache oder Automatik, optional direkt ins Englische übersetzen |
-| **Ausgabe** | Automatisch einfügen, Enter, Tippen statt Einfügen, Sprachbefehle |
+| **Ausgabe** | Automatisch einfügen, Zwischenablage danach zurücksetzen, Enter, Tippen statt Einfügen, Sprachbefehle |
 | **System** | Mit Windows starten, Status-Anzeige (HUD), Update-Hinweis ein/aus |
 | **Darstellung** | Drei Stile (Mix, Claude, Hell) und Oberflächen-Sprache (Automatisch, Deutsch, English) |
 
@@ -97,8 +101,16 @@ Faustregel: **Mit NVIDIA-Karte → `large-v3`. Ohne → `small`** (wenn dir das 
 `large-v3-turbo` ausprobieren, falls dein PC es schafft).
 
 ## Wörterbuch
-Tray-Menü bzw. Einstellungsfenster → **Wörterbuch bearbeiten**. Ein Begriff pro Zeile (Namen, Fachwörter,
-Abkürzungen). Wirkt sofort beim nächsten Diktat. Nicht übertreiben: ab ca. 50 Begriffen lässt der Effekt nach.
+Tray-Menü bzw. Einstellungsfenster → **Wörterbuch bearbeiten**. Wirkt sofort beim nächsten Diktat.
+
+- **Begriffe:** ein Begriff pro Zeile (Namen, Fachwörter, Abkürzungen), die Whisper sonst falsch schreibt.
+  Nicht übertreiben: ab ca. 50 Begriffen lässt der Effekt nach.
+- **Feste Ersetzungen:** mit `=>`. Links steht, was Whisper schreibt, rechts, was daraus werden soll – zum Beispiel
+  ```
+  n acht n => n8n
+  mfg => Mit freundlichen Grüßen
+  ```
+  Es zählen nur ganze Wörter, die Groß-/Kleinschreibung links ist egal.
 
 ## Mikrofon
 Im Einstellungsfenster oder per Rechtsklick auf das Tray-Icon → **Mikrofon**. Der Gerätename wird gespeichert –
@@ -134,6 +146,7 @@ Nach Änderungen an der Datei die App neu starten (Tray-Menü → **Neu starten*
 | `app_profiles` | Fenstertitel-Schnipsel → Überschreibungen, z. B. `"whatsapp": {"auto_enter": true}` |
 | `ui_language` | Oberfläche: `auto` (Windows-Sprache), `de` oder `en` |
 | `update_check` | `false` = keine Update-Abfrage bei GitHub |
+| `restore_clipboard` | `false` = die vorher kopierte Zwischenablage nach dem Einfügen nicht zurückholen |
 | `spielmodus_pfad` | Optional, nur für Fortgeschrittene: Ordner mit einem eigenen `spielmodus.py`, das bei laufendem Spiel auf ein sparsames Modell wechselt |
 
 ## Probleme?
@@ -167,9 +180,12 @@ Das beendet Blitztext und startet es sofort wieder – praktisch auch nach Ände
 Aktuell läuft Blitztext über Python (`setup.bat`). Wenn du dir eine fertige `.exe` ohne Python-Installation
 wünschst, **schreib bitte ein [Issue](../../issues)** – bei genug Bedarf bauen wir sie.
 
+## Datenschutz
+Alles läuft lokal, es gibt keine Telemetrie. Genaue Aufstellung, was wohin geht: [docs/privacy.md](docs/privacy.md).
+
 ## Hinweis
 Kleines Hobbyprojekt, ohne Garantie („as is“). Support und Updates nach Zeit und Lust – Issues und Pull Requests
-sind willkommen. Die Texterkennung kann Fehler machen; wichtige Texte bitte kurz gegenlesen.
+sind willkommen (siehe [CONTRIBUTING.md](CONTRIBUTING.md)). Die Texterkennung kann Fehler machen; wichtige Texte bitte kurz gegenlesen.
 
 ## Technik und Lizenzen
 - Blitztext für Windows steht unter der **MIT-Lizenz** (siehe [LICENSE](LICENSE)) – du darfst es frei nutzen,
