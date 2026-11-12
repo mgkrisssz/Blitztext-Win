@@ -342,6 +342,8 @@ def _run(ctx):
             FT = (body, 13, "bold")
 
         root.configure(bg=pal["border"])   # 1px-Rahmen um die Bubble
+        if holder.get("popup_close"):
+            holder["popup_close"]()
         if holder["content"]:
             holder["content"].destroy()
         # Inhalt liegt in einem Canvas, damit das Fenster auf kleinen Bildschirmen
@@ -410,9 +412,6 @@ def _run(ctx):
             c = tk.Canvas(content, height=34, bg=BGC, highlightthickness=0,
                           bd=0, cursor="hand2")
             c.pack(fill="x", padx=20, pady=4)
-            menu = tk.Menu(root, tearoff=0, bg=pal["field_bg"], fg=pal["text"],
-                           activebackground=pal["chip_hot"],
-                           activeforeground="white", bd=0, font=FB)
             def draw(_e=None):
                 c.delete("all")
                 w = c.winfo_width()
@@ -426,25 +425,115 @@ def _run(ctx):
                 c.create_text(14, 17, anchor="w", text=txt, fill=pal["text"], font=FB)
                 c.create_text(w - 14, 17, anchor="e", text="⌄", fill=pal["subtle"],
                               font=(body, 10, "bold"))
-            for opt in options:
-                menu.add_command(label=t(opt), command=lambda o=opt: (on_pick(o), draw()))
-            c.bind("<Button-1>", lambda e: menu.tk_popup(c.winfo_rootx() + 8,
-                                                         c.winfo_rooty() + 36))
+            def open_popup(_e=None):
+                """Eigenes, zum Theme passendes Auswahlfenster (statt des Windows-Menues)."""
+                if holder.get("popup_close"):
+                    holder["popup_close"]()
+                    return
+                ROW, MAXROWS = 34, 7
+                top = tk.Toplevel(root)
+                top.overrideredirect(True)
+                top.attributes("-topmost", True)
+                top.configure(bg=pal["field_border"])          # 1px-Rahmen
+                w = c.winfo_width()
+                rows = min(len(options), MAXROWS)
+                h = rows * ROW + 8
+                x, y = c.winfo_rootx(), c.winfo_rooty() + 38
+                if y + h > root.winfo_screenheight() - 40:       # kein Platz unten -> nach oben
+                    y = c.winfo_rooty() - h - 4
+                top.geometry(f"{w}x{h + 2}+{x}+{y}")
+
+                body_f = tk.Frame(top, bg=pal["field_bg"])
+                body_f.pack(fill="both", expand=True, padx=1, pady=1)
+                cv = tk.Canvas(body_f, bg=pal["field_bg"], highlightthickness=0, bd=0)
+                cv.pack(fill="both", expand=True)
+                lst = tk.Frame(cv, bg=pal["field_bg"])
+                cv.create_window(0, 0, window=lst, anchor="nw", width=w - 2)
+                current = text_get()
+
+                def schliessen(_e=None):
+                    holder["popup_close"] = None
+                    try:
+                        top.grab_release()
+                    except Exception:
+                        pass
+                    try:
+                        top.destroy()
+                    except Exception:
+                        pass
+
+                def waehlen(o):
+                    schliessen()
+                    on_pick(o)
+                    draw()
+
+                for opt in options:
+                    aktiv = (opt == current)
+                    row = tk.Frame(lst, bg=pal["field_bg"], height=ROW, cursor="hand2")
+                    row.pack(fill="x", padx=4, pady=(4 if opt == options[0] else 0, 0))
+                    row.pack_propagate(False)
+                    lab = tk.Label(row, text=t(opt), bg=pal["field_bg"], fg=pal["text"],
+                                   font=(body, 10, "bold" if aktiv else "normal"), anchor="w")
+                    lab.pack(side="left", fill="both", expand=True, padx=(10, 0))
+                    tick = tk.Label(row, text="✓" if aktiv else "", bg=pal["field_bg"],
+                                    fg=pal["chip_hot"], font=(body, 10, "bold"))
+                    tick.pack(side="right", padx=(0, 10))
+                    def hover(on, row=row, lab=lab, tick=tick):
+                        col = pal["seg_bg"] if on else pal["field_bg"]
+                        for wdg in (row, lab, tick):
+                            wdg.configure(bg=col)
+                    for wdg in (row, lab, tick):
+                        wdg.bind("<Enter>", lambda e, hv=hover: hv(True))
+                        wdg.bind("<Leave>", lambda e, hv=hover: hv(False))
+                        wdg.bind("<Button-1>", lambda e, o=opt: waehlen(o))
+
+                lst.update_idletasks()
+                gesamt = lst.winfo_reqheight() + 4
+                cv.configure(scrollregion=(0, 0, w - 2, gesamt))
+                if len(options) > MAXROWS:                      # lange Liste: Mausrad scrollt
+                    def rad(e):
+                        cv.yview_scroll(-1 if e.delta > 0 else 1, "units")
+                    top.bind("<MouseWheel>", rad)
+                    cv.configure(yscrollincrement=ROW)
+                    # aktuelle Auswahl sichtbar machen
+                    if current in options:
+                        idx = options.index(current)
+                        cv.yview_moveto(max(0, (idx - 2) * ROW) / max(gesamt, 1))
+
+                # Klick ausserhalb oder Esc schliesst
+                def klick(e):
+                    if not (top.winfo_rootx() <= e.x_root < top.winfo_rootx() + top.winfo_width()
+                            and top.winfo_rooty() <= e.y_root < top.winfo_rooty() + top.winfo_height()):
+                        schliessen()
+                top.bind("<Button-1>", klick, add="+")
+                top.bind("<Escape>", schliessen)
+                holder["popup_close"] = schliessen
+                _round_corners(top)
+                try:
+                    top.grab_set()
+                    top.focus_force()
+                except Exception:
+                    pass
+            c.bind("<Button-1>", open_popup)
             c.bind("<Configure>", draw)
             draw()
 
-        def pill_button(text, cmd):
+        def pill_button(text, cmd, pady=(14, 16), secondary=False):
             c = tk.Canvas(content, height=36, bg=BGC, highlightthickness=0,
                           bd=0, cursor="hand2")
-            c.pack(fill="x", padx=20, pady=(14, 16))
+            c.pack(fill="x", padx=20, pady=pady)
             def draw(_e=None):
                 c.delete("all")
                 w = c.winfo_width()
                 if w < 10:
                     w = WW - 42
-                c._imgs = [_pill(c, w, 36, 8, pal["btn_bg"], outline=pal["btn_border"])]
+                if secondary:       # zurueckhaltender Zweitknopf: heller Grund, Rahmen
+                    bg, rand, txt = pal["chip_bg"], pal["chip_border"], pal["chip_text"]
+                else:
+                    bg, rand, txt = pal["btn_bg"], pal["btn_border"], pal["btn_text"]
+                c._imgs = [_pill(c, w, 36, 8, bg, outline=rand)]
                 c.create_image(0, 0, anchor="nw", image=c._imgs[0])
-                c.create_text(w / 2, 18, text=t(text), fill=pal["btn_text"],
+                c.create_text(w / 2, 18, text=t(text), fill=txt,
                               font=(body, 10, "bold"))
             c.bind("<Configure>", draw)
             c.bind("<Button-1>", lambda e: cmd())
@@ -682,11 +771,13 @@ def _run(ctx):
             rebuild()
         select_row(lambda: ui_to_label.get(cfg.get("ui_language") or "auto", "Automatisch"),
                    [l for l, _ in UI_LANGS], ui_pick)
-        hint("Oberfläche")
+        hint("Sprache der Oberfläche")
 
-        pill_button("Wörterbuch bearbeiten", lambda: ctx["open_vocab"]())
         if ctx.get("restart"):
-            pill_button("Neu starten", lambda: ctx["restart"]())
+            pill_button("Wörterbuch bearbeiten", lambda: ctx["open_vocab"](), pady=(14, 6))
+            pill_button("Neu starten", lambda: ctx["restart"](), pady=(0, 16), secondary=True)
+        else:
+            pill_button("Wörterbuch bearbeiten", lambda: ctx["open_vocab"]())
 
         # -- Groesse + Position: erstmalig rechts unten (beim Tray), danach
         # bleibt die Unterkante, wo der Nutzer das Fenster hingezogen hat ------

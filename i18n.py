@@ -64,7 +64,7 @@ EN = {
     "Nach Updates suchen": "Check for updates",
     "fragt gelegentlich bei GitHub nach einer neuen Version": "occasionally asks GitHub for a new version",
     # --- Darstellung
-    "Oberfläche": "Interface language",
+    "Sprache der Oberfläche": "Interface language",
     "Automatisch": "Automatic",
     "Hell": "Light",
     "Wörterbuch bearbeiten": "Edit dictionary",
