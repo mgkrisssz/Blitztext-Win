@@ -88,7 +88,7 @@ Icon-Farben: grau = Modell lädt · blau = bereit · rot = nimmt auf · orange =
 | **Sprache** | Diktiersprache oder Automatik, optional direkt ins Englische übersetzen |
 | **Ausgabe** | Automatisch einfügen, Zwischenablage danach zurücksetzen, Enter, Tippen statt Einfügen, Sprachbefehle |
 | **System** | Mit Windows starten, Status-Anzeige (HUD), Update-Hinweis ein/aus |
-| **Darstellung** | Vier Stile (Mix, Claude, Hell, Petrol) und Oberflächen-Sprache (Automatisch, Deutsch, English) |
+| **Darstellung** | Vier Stile (Petrol als Standard, Mix, Claude, Hell) und Oberflächen-Sprache (Automatisch, Deutsch, English) |
 
 Links wählst du den Bereich (Aufnahme, Erkennung, Ausgabe, System), rechts stellst du ihn ein. Auf kleinen Bildschirmen scrolliert die Seite mit dem Mausrad.
 

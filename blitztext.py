@@ -98,7 +98,7 @@ DEFAULT_CONFIG = {
     "voice_commands": True,           # gesprochenes "neue Zeile"/"neuer Absatz" -> Umbruch
     "hotkey_second": "<f8>",          # Zweit-Hotkey: diktiert einmalig in der Zweitsprache ("" = aus)
     "second_language": "en",          # Sprache des Zweit-Hotkeys (Kuerzel wie "en", "hu", "fr" ...)
-    "theme": "mix",                   # Stil des Einstellungsfensters: "mix", "claude", "hell"
+    "theme": "petrol",                # Stil des Einstellungsfensters: "petrol", "mix", "claude", "hell"
     "ui_language": "auto",            # Oberflaeche: "auto" (Windows-Sprache), "de", "en"
     "restore_clipboard": False,       # True = nach dem Einfuegen die vorher kopierte Zwischenablage wiederherstellen
                                       # (Standard aus: landet das Diktat nirgends, bleibt es sonst in der Zwischenablage)

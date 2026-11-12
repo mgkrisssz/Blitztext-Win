@@ -3,7 +3,8 @@ Einstellungsfenster fuer Blitztext (Doppelklick auf das Tray-Icon).
 
 Design: randlose helle "Bubble" mit runden Ecken (DWM), flache Flaechen,
 drei umschaltbare Stile (cfg["theme"]):
-  "mix"    - weiss, Lora-Titel, gut lesbare Windows-Schrift, Terrakotta/Gruen (Standard)
+  "mix"    - weiss, Lora-Titel, gut lesbare Windows-Schrift, Terrakotta/Gruen
+  "petrol" - leichtes Gruengrau mit Petrol-Akzent (Standard)
   "claude" - warmes Creme, gleiche Schriften, Terrakotta
   "hell"   - Segoe UI Variable, Windows-Blau
 Die Schriften liegen als TTF in ./fonts und werden nur fuer diesen Prozess
@@ -365,7 +366,7 @@ def _run(ctx):
         if cap["which"]:
             end_capture()
 
-        pal = THEMES.get(cfg.get("theme") or "mix", THEMES["mix"])
+        pal = THEMES.get(cfg.get("theme") or "petrol", THEMES["petrol"])
         BGC = pal["bg"]
 
         # Schriften: Fliesstext in der klaren Windows-Schrift (Familjen Grotesk war schwer
@@ -715,7 +716,7 @@ def _run(ctx):
             c = tk.Canvas(content, height=30, bg=BGC, highlightthickness=0,
                           bd=0, cursor="hand2")
             c.pack(fill="x", padx=20, pady=4)
-            cur = cfg.get("theme") or "mix"
+            cur = cfg.get("theme") or "petrol"
             def draw(_e=None):
                 c.delete("all")
                 w = c.winfo_width()
@@ -738,7 +739,7 @@ def _run(ctx):
                 w = c.winfo_width()
                 idx = min(n_seg - 1, max(0, int((e.x - 3) / ((w - 6) / n_seg))))
                 key = order[idx]
-                if key != (cfg.get("theme") or "mix"):
+                if key != (cfg.get("theme") or "petrol"):
                     cfg["theme"] = key
                     save()
                     rebuild()
