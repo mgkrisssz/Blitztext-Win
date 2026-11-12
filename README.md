@@ -88,9 +88,16 @@ Icon-Farben: grau = Modell lädt · blau = bereit · rot = nimmt auf · orange =
 | **Sprache** | Diktiersprache oder Automatik, optional direkt ins Englische übersetzen |
 | **Ausgabe** | Automatisch einfügen, Zwischenablage danach zurücksetzen, Enter, Tippen statt Einfügen, Sprachbefehle |
 | **System** | Mit Windows starten, Status-Anzeige (HUD), Update-Hinweis ein/aus |
-| **Darstellung** | Drei Stile (Mix, Claude, Hell) und Oberflächen-Sprache (Automatisch, Deutsch, English) |
+| **Darstellung** | Vier Stile (Mix, Claude, Hell, Petrol) und Oberflächen-Sprache (Automatisch, Deutsch, English) |
 
 Links wählst du den Bereich (Aufnahme, Erkennung, Ausgabe, System), rechts stellst du ihn ein. Auf kleinen Bildschirmen scrolliert die Seite mit dem Mausrad.
+
+| | |
+|---|---|
+| <img src="docs/bereich-aufnahme.png" width="400" alt="Aufnahme"> | <img src="docs/bereich-erkennung.png" width="400" alt="Erkennung"> |
+| **Aufnahme:** Hotkeys, Zweitsprache, Push-to-Talk | **Erkennung:** Mikrofon, Modell, Sprache, Wörterbuch |
+| <img src="docs/bereich-ausgabe.png" width="400" alt="Ausgabe"> | <img src="docs/bereich-system.png" width="400" alt="System"> |
+| **Ausgabe:** Einfügen, Tippen mit Tempo, Sprachbefehle | **System:** Autostart, Updates, Stil, Sprache |
 
 ## Welches Modell?
 Größer = genauer, aber langsamer und mehr Speicher. Im Einstellungsfenster unter **Modell** wählbar –

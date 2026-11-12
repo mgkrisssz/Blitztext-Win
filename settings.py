@@ -121,6 +121,20 @@ THEMES = {
         close_hover="#f0f1f4",
         serif=False,
     ),
+    "petrol": dict(
+        label="Petrol",
+        bg="#f6f8f8", border="#d9e3e1", text="#1d2b29", subtle="#586a66",
+        divider="#e4ebea", sect="#0e7c6b",
+        chip_bg="#ffffff", chip_border="#d0dcda", chip_text="#2c3d3a",
+        chip_hot="#0e7c6b", chip_hot2="#4aa798",
+        tog_off="#b3c6c2", tog_on="#0e7c6b",
+        field_bg="#ffffff", field_border="#d0dcda",
+        btn_bg="#0e7c6b", btn_border="#0e7c6b", btn_text="#ffffff",
+        seg_bg="#e6eeed",
+        meter_bg="#e1eae8", meter="#0e7c6b",
+        close_hover="#e9f0ef",
+        serif=True,
+    ),
 }
 
 _fonts_loaded = False
@@ -696,7 +710,8 @@ def _run(ctx):
             holder["meter_draw"] = draw
 
         def seg_row():
-            order = ["hell", "claude", "mix"]
+            order = ["hell", "claude", "mix", "petrol"]
+            n_seg = len(order)
             c = tk.Canvas(content, height=30, bg=BGC, highlightthickness=0,
                           bd=0, cursor="hand2")
             c.pack(fill="x", padx=20, pady=4)
@@ -708,7 +723,7 @@ def _run(ctx):
                     w = PW - 42
                 c._imgs = [_pill(c, w, 30, 9, pal["seg_bg"])]
                 c.create_image(0, 0, anchor="nw", image=c._imgs[0])
-                seg_w = (w - 6) / 3
+                seg_w = (w - 6) / n_seg
                 idx = order.index(cur)
                 c._imgs.append(_pill(c, int(seg_w), 24, 7, "#ffffff",
                                      outline=pal["field_border"]))
@@ -721,7 +736,7 @@ def _run(ctx):
                                   font=(body, 9, "bold" if active else "normal"))
             def click(e):
                 w = c.winfo_width()
-                idx = min(2, max(0, int((e.x - 3) / ((w - 6) / 3))))
+                idx = min(n_seg - 1, max(0, int((e.x - 3) / ((w - 6) / n_seg))))
                 key = order[idx]
                 if key != (cfg.get("theme") or "mix"):
                     cfg["theme"] = key
@@ -739,7 +754,10 @@ def _run(ctx):
         head = tk.Frame(header_f, bg=BGC)
         head.pack(fill="x", padx=(20, 10), pady=(12, 0))
         from logo import blitz_icon
-        logo_img = ImageTk.PhotoImage(blitz_icon(groesse=26), master=head)
+        # Logo in der Akzentfarbe des gewaehlten Stils (Petrol -> petrolfarbener Blitz)
+        akzent = pal["chip_hot"].lstrip("#")
+        akzent_rgba = tuple(int(akzent[i:i + 2], 16) for i in (0, 2, 4)) + (255,)
+        logo_img = ImageTk.PhotoImage(blitz_icon(akzent_rgba, 26), master=head)
         title = tk.Label(head, text=" Blitztext", image=logo_img, compound="left",
                          bg=BGC, fg=pal["text"], font=FT, anchor="w")
         title._logo = logo_img                  # Referenz halten (sonst raeumt Tk das Bild weg)
