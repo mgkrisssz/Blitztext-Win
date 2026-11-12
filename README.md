@@ -16,8 +16,10 @@ auf deinem eigenen PC. Keine Konten, keine API-Keys, keine Daten verlassen den R
 
 <p align="center"><img src="docs/einstellungen.png" alt="Einstellungsfenster / settings window" width="300"></p>
 
-Windows-Nachbau der Idee von [blitztext-app](https://github.com/cmagnussen/blitztext-app)
-(macOS) von cmagnussen – mit freundlicher Erlaubnis des Autors.
+💜 **Danke an [cmagnussen](https://github.com/cmagnussen)!** Die Idee stammt von seiner macOS-App
+[blitztext-app](https://github.com/cmagnussen/blitztext-app) (MIT-Lizenz). Er hat ausdrücklich dazu ermuntert, sie
+nachzubauen und weiterzuentwickeln – Blitztext-Win ist der Windows-Nachbau mit eigenem Namen und eigenem Logo.
+*Thanks to cmagnussen, whose macOS app inspired this Windows rebuild.*
 
 ---
 
