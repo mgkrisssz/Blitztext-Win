@@ -57,6 +57,13 @@ if not errorlevel 1 (
 ) else (
     echo Keine NVIDIA-Grafikkarte gefunden - Blitztext laeuft auf dem Prozessor.
     echo No NVIDIA GPU found - Blitztext will run on the CPU.
+    echo.
+    echo Hinweis: AMD Radeon und Intel-Grafik werden von der Erkennungs-Engine
+    echo nicht beschleunigt - Blitztext nutzt dann den Prozessor. Das funktioniert
+    echo gut mit dem Modell "small", das beim ersten Start automatisch gewaehlt wird.
+    echo Note: AMD Radeon and Intel graphics are not accelerated - Blitztext runs
+    echo on the CPU with the "small" model, which works fine for dictation.
+    echo.
 )
 
 REM --- 4) Umgebung + Pakete --------------------------------------------------
